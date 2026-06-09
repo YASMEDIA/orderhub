@@ -50,9 +50,9 @@ Edit `.env`:
 ### 4. Migrate & seed
 ```bash
 npm run db:migrate      # applies the committed migration (prisma/migrations/)
-npm run db:seed         # seeds Super Admin, Admin, Employee, 4 projects, 29 demo orders
+npm run db:seed         # production bootstrap: ensures the Super Admin + global settings
 ```
-> The repo ships an initial migration (`prisma/migrations/20260609000000_init`), so `db:migrate` (dev) and `db:deploy` (prod/CI) both work without a baseline step. The seed is idempotent — re-running won't duplicate orders.
+> The repo ships an initial migration (`prisma/migrations/20260609000000_init`), so `db:migrate` (dev) and `db:deploy` (prod/CI) both work without a baseline step. The seed is a lean, idempotent production bootstrap — it creates the Super Admin if missing (preserving a password you later change) and removes the original demo data; it does **not** create dummy projects/orders.
 
 ### 5. Run
 ```bash
