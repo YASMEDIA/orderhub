@@ -76,6 +76,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <CardHeader><CardTitle className="text-base">Public Invoice QR</CardTitle></CardHeader>
           <CardContent className="flex flex-col items-center gap-3">
             <Image src={qr} alt="Invoice QR" width={settings.qrSize} height={settings.qrSize} className="rounded border" unoptimized />
+            <p className="text-center font-semibold">{order.orderNumber}</p>
             <Link href={`/invoice/${order.publicId}`} target="_blank" className="break-all text-center text-xs text-primary hover:underline">
               {invoiceUrl(order.publicId)}
             </Link>

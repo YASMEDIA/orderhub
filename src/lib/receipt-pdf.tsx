@@ -128,6 +128,7 @@ function ReceiptDoc(d: ReceiptData) {
         <View style={styles.qrWrap}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image style={styles.qr} src={d.qrDataUrl} />
+          <Text style={[styles.bold, { fontSize: 9, textAlign: "center", marginTop: 2 }]}>{d.orderNumber}</Text>
           <Text style={styles.muted}>Scan to view invoice</Text>
         </View>
 
