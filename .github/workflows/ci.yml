@@ -38,7 +38,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          # No `cache: npm` — the repo ships no committed package-lock.json,
+          # and setup-node's npm cache requires a lockfile to exist.
 
       - name: Install dependencies
         # Use the lockfile when present (reproducible); fall back on first run.
