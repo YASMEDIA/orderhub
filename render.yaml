@@ -13,9 +13,11 @@ services:
     name: orderhub
     runtime: node
     plan: free
-    # Install → run DB migrations → seed (idempotent) → build Next.js.
-    buildCommand: npm install && npx prisma migrate deploy && npm run db:seed && npm run build
-    startCommand: npm run start
+    # Build only needs the app (Next pages are dynamic, no DB at build time).
+    buildCommand: npm install && npm run build
+    # Migrate + seed run at STARTUP, where the database is guaranteed reachable.
+    # Seed is idempotent; made non-fatal so the app always starts.
+    startCommand: npx prisma migrate deploy && (npm run db:seed || echo "seed skipped") && npm run start
     healthCheckPath: /login
     envVars:
       - key: DATABASE_URL
