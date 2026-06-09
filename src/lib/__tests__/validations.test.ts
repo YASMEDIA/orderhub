@@ -4,6 +4,7 @@ import { orderSchema } from "@/lib/validations";
 const validPayload = {
   projectId: "proj_1",
   customerName: "Layla",
+  customerPhone: "+965 5000 0000",
   source: "INSTAGRAM",
   paymentMethod: "CASH",
   orderDate: "2026-06-09",
@@ -45,6 +46,12 @@ describe("orderSchema", () => {
       ...validPayload,
       governorate: "MARS",
     });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing customer phone", () => {
+    const { customerPhone: _omit, ...withoutPhone } = validPayload;
+    const result = orderSchema.safeParse(withoutPhone);
     expect(result.success).toBe(false);
   });
 

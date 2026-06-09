@@ -30,6 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     projectPhone: order.project.phone,
     orderNumber: order.orderNumber,
     customerName: order.customerName,
+    customerPhone: order.customerPhone,
     orderDate: order.orderDate,
     deliveryDate: order.deliveryDate,
     paymentMethod: labelFor(PAYMENT_METHODS, order.paymentMethod),

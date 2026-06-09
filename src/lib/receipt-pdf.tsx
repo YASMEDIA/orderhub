@@ -15,6 +15,7 @@ export type ReceiptData = {
   projectPhone?: string | null;
   orderNumber: string;
   customerName: string;
+  customerPhone?: string | null;
   orderDate: Date | string;
   deliveryDate: Date | string;
   paymentMethod: string; // already-localized label, e.g. "Online Payment" / "Cash"
@@ -73,6 +74,12 @@ function ReceiptDoc(d: ReceiptData) {
           <Text style={styles.bold}>Customer</Text>
           <Text>{d.customerName}</Text>
         </View>
+        {d.customerPhone ? (
+          <View style={styles.row}>
+            <Text style={styles.bold}>Phone</Text>
+            <Text>{d.customerPhone}</Text>
+          </View>
+        ) : null}
         <View style={styles.row}>
           <Text style={styles.bold}>Order Date</Text>
           <Text>{formatDate(d.orderDate)}</Text>

@@ -40,6 +40,7 @@ export const orderItemSchema = z.object({
 export const orderSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
   customerName: z.string().trim().min(2, "Customer name is required"),
+  customerPhone: z.string().trim().min(6, "Customer phone is required"),
   source: z.enum(["TIKTOK", "INSTAGRAM", "WHATSAPP", "WEBSITE"]),
   paymentMethod: z.enum(["ONLINE", "CASH"]),
   orderDate: z.string().min(1, "Order date is required"),

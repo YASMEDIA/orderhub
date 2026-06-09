@@ -105,8 +105,9 @@ model Order {
   orderNumber String      @unique // ORD-2026-000001
   year        Int
 
-  customerName String
-  source       OrderSource
+  customerName  String
+  customerPhone String      @default("")
+  source        OrderSource
   orderDate    DateTime
   deliveryDate DateTime
 

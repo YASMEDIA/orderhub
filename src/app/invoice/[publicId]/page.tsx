@@ -44,6 +44,12 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><p className="text-xs text-muted-foreground">Customer</p><p className="font-medium">{order.customerName}</p></div>
+            {order.customerPhone ? (
+              <div>
+                <p className="text-xs text-muted-foreground">Phone</p>
+                <a href={`tel:${order.customerPhone}`} className="font-medium text-primary hover:underline">{order.customerPhone}</a>
+              </div>
+            ) : null}
             <div><p className="text-xs text-muted-foreground">Delivery Date</p><p className="font-medium">{formatDate(order.deliveryDate)}</p></div>
             <div><p className="text-xs text-muted-foreground">Payment Method</p><p className="font-medium">{labelFor(PAYMENT_METHODS, order.paymentMethod)}</p></div>
           </div>

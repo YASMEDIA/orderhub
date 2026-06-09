@@ -104,6 +104,11 @@ export function OrderForm({
             {err(errors.customerName?.message)}
           </div>
           <div className="space-y-2">
+            <Label>Customer Phone</Label>
+            <Input type="tel" {...register("customerPhone")} placeholder="e.g. +965 5000 0000" />
+            {err(errors.customerPhone?.message)}
+          </div>
+          <div className="space-y-2">
             <Label>Order Source</Label>
             <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("source")}>
               {ORDER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}

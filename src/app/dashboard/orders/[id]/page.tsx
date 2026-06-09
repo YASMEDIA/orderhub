@@ -55,6 +55,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <CardContent>
             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <Detail label="Customer" value={order.customerName} />
+              <Detail label="Phone" value={order.customerPhone || "—"} />
               <Detail label="Source" value={labelFor(ORDER_SOURCES, order.source)} />
               <Detail label="Payment" value={labelFor(PAYMENT_METHODS, order.paymentMethod)} />
               <Detail label="Order Date" value={formatDate(order.orderDate)} />

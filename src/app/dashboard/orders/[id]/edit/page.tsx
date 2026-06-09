@@ -27,6 +27,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
         defaultValues={{
           projectId: order.projectId,
           customerName: order.customerName,
+          customerPhone: order.customerPhone,
           source: order.source,
           paymentMethod: order.paymentMethod,
           orderDate: order.orderDate.toISOString().slice(0, 10),

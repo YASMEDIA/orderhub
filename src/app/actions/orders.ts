@@ -40,6 +40,7 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
           orderNumber,
           year,
           customerName: data.customerName,
+          customerPhone: data.customerPhone,
           source: data.source,
           paymentMethod: data.paymentMethod,
           orderDate: new Date(data.orderDate),
@@ -103,6 +104,7 @@ export async function updateOrder(id: string, input: unknown): Promise<OrderActi
         where: { id },
         data: {
           customerName: data.customerName,
+          customerPhone: data.customerPhone,
           source: data.source,
           paymentMethod: data.paymentMethod,
           orderDate: new Date(data.orderDate),
