@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canAccessProject } from "@/lib/rbac";
-import { qrPngBuffer } from "@/lib/qr";
+import { qrWithLabelPng } from "@/lib/qr-label";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!order) return new NextResponse("Not found", { status: 404 });
   if (!canAccessProject(user, order.projectId)) return new NextResponse("Forbidden", { status: 403 });
 
-  const png = await qrPngBuffer(order.publicId, 512);
+  const png = await qrWithLabelPng(order.publicId, order.orderNumber);
   return new NextResponse(new Uint8Array(png), {
     headers: {
       "Content-Type": "image/png",
