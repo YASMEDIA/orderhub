@@ -5,6 +5,7 @@ const validPayload = {
   projectId: "proj_1",
   customerName: "Layla",
   source: "INSTAGRAM",
+  paymentMethod: "CASH",
   orderDate: "2026-06-09",
   deliveryDate: "2026-06-10",
   governorate: "HAWALLI",
@@ -44,6 +45,17 @@ describe("orderSchema", () => {
       ...validPayload,
       governorate: "MARS",
     });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid payment method", () => {
+    const result = orderSchema.safeParse({ ...validPayload, paymentMethod: "CRYPTO" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing payment method", () => {
+    const { paymentMethod: _omit, ...withoutPayment } = validPayload;
+    const result = orderSchema.safeParse(withoutPayment);
     expect(result.success).toBe(false);
   });
 

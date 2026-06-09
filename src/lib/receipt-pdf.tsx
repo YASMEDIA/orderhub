@@ -17,6 +17,7 @@ export type ReceiptData = {
   customerName: string;
   orderDate: Date | string;
   deliveryDate: Date | string;
+  paymentMethod: string; // already-localized label, e.g. "Online Payment" / "Cash"
   items: { productName: string; quantity: number; unitPrice: number; lineTotal: number }[];
   deliveryFee: number;
   subtotal: number;
@@ -25,7 +26,14 @@ export type ReceiptData = {
   generatedAt: Date | string;
   header?: string | null;
   footer?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
 };
+
+// Strip protocol/www for a compact thermal-friendly handle.
+function cleanSocial(value: string): string {
+  return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/$/, "");
+}
 
 // 80mm thermal roll. @react-pdf uses points (1mm ≈ 2.83465pt). Height auto-grows.
 const WIDTH = 226; // ~80mm
@@ -73,6 +81,10 @@ function ReceiptDoc(d: ReceiptData) {
           <Text style={styles.bold}>Delivery Date</Text>
           <Text>{formatDate(d.deliveryDate)}</Text>
         </View>
+        <View style={styles.row}>
+          <Text style={styles.bold}>Payment</Text>
+          <Text>{d.paymentMethod}</Text>
+        </View>
 
         <View style={styles.hr} />
 
@@ -116,6 +128,14 @@ function ReceiptDoc(d: ReceiptData) {
         {d.footer ? <Text style={styles.muted}>{d.footer}</Text> : null}
         <Text style={styles.muted}>Generated: {formatDateTime(d.generatedAt)}</Text>
         <Text style={styles.muted}>Thank you!</Text>
+
+        {d.instagram || d.tiktok ? (
+          <View>
+            <View style={styles.hr} />
+            {d.instagram ? <Text style={styles.muted}>Instagram: {cleanSocial(d.instagram)}</Text> : null}
+            {d.tiktok ? <Text style={styles.muted}>TikTok: {cleanSocial(d.tiktok)}</Text> : null}
+          </View>
+        ) : null}
       </Page>
     </Document>
   );

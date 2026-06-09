@@ -28,6 +28,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
           projectId: order.projectId,
           customerName: order.customerName,
           source: order.source,
+          paymentMethod: order.paymentMethod,
           orderDate: order.orderDate.toISOString().slice(0, 10),
           deliveryDate: order.deliveryDate.toISOString().slice(0, 10),
           governorate: order.governorate,

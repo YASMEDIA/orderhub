@@ -4,6 +4,7 @@ import { requireUser, canAccessProject } from "@/lib/rbac";
 import { renderReceiptPdf } from "@/lib/receipt-pdf";
 import { qrDataUrl } from "@/lib/qr";
 import { getSettings } from "@/app/actions/settings";
+import { labelFor, PAYMENT_METHODS } from "@/lib/constants";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,6 +32,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     customerName: order.customerName,
     orderDate: order.orderDate,
     deliveryDate: order.deliveryDate,
+    paymentMethod: labelFor(PAYMENT_METHODS, order.paymentMethod),
     items: order.items,
     deliveryFee: order.deliveryFee,
     subtotal: order.subtotal,
@@ -39,6 +41,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     generatedAt: new Date(),
     header: settings.receiptHeader,
     footer: settings.receiptFooter,
+    instagram: order.project.instagram,
+    tiktok: order.project.tiktok,
   });
 
   return new NextResponse(new Uint8Array(pdf), {

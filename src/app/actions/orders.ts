@@ -41,6 +41,7 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
           year,
           customerName: data.customerName,
           source: data.source,
+          paymentMethod: data.paymentMethod,
           orderDate: new Date(data.orderDate),
           deliveryDate: new Date(data.deliveryDate),
           governorate: data.governorate,
@@ -103,6 +104,7 @@ export async function updateOrder(id: string, input: unknown): Promise<OrderActi
         data: {
           customerName: data.customerName,
           source: data.source,
+          paymentMethod: data.paymentMethod,
           orderDate: new Date(data.orderDate),
           deliveryDate: new Date(data.deliveryDate),
           governorate: data.governorate,

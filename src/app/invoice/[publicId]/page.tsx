@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
-import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES } from "@/lib/constants";
+import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "Invoice — OrderHub" };
 
@@ -45,6 +45,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><p className="text-xs text-muted-foreground">Customer</p><p className="font-medium">{order.customerName}</p></div>
             <div><p className="text-xs text-muted-foreground">Delivery Date</p><p className="font-medium">{formatDate(order.deliveryDate)}</p></div>
+            <div><p className="text-xs text-muted-foreground">Payment Method</p><p className="font-medium">{labelFor(PAYMENT_METHODS, order.paymentMethod)}</p></div>
           </div>
 
           <div className="rounded-lg border p-3 text-sm">
@@ -74,6 +75,24 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
             <div className="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>{formatMoney(order.grandTotal)}</span></div>
           </div>
         </div>
+
+        {order.project.instagram || order.project.tiktok ? (
+          <div className="border-t px-6 py-4 text-center">
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Follow us</p>
+            <div className="flex items-center justify-center gap-4 text-sm">
+              {order.project.instagram ? (
+                <a href={order.project.instagram} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                  Instagram
+                </a>
+              ) : null}
+              {order.project.tiktok ? (
+                <a href={order.project.tiktok} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                  TikTok
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="border-t px-6 py-4 text-center text-xs text-muted-foreground">
           Powered by OrderHub

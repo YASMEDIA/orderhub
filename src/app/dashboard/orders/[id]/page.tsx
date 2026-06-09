@@ -7,7 +7,7 @@ import { requireUser, canAccessProject } from "@/lib/rbac";
 import { qrDataUrl, invoiceUrl } from "@/lib/qr";
 import { getSettings } from "@/app/actions/settings";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
-import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_SOURCES } from "@/lib/constants";
+import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_SOURCES, PAYMENT_METHODS } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -56,6 +56,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <Detail label="Customer" value={order.customerName} />
               <Detail label="Source" value={labelFor(ORDER_SOURCES, order.source)} />
+              <Detail label="Payment" value={labelFor(PAYMENT_METHODS, order.paymentMethod)} />
               <Detail label="Order Date" value={formatDate(order.orderDate)} />
               <Detail label="Delivery Date" value={formatDate(order.deliveryDate)} />
               <Detail label="Governorate" value={labelFor(GOVERNORATES, order.governorate)} />

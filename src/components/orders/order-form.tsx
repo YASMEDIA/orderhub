@@ -11,6 +11,7 @@ import {
   GOVERNORATES,
   HOUSING_TYPES,
   ORDER_SOURCES,
+  PAYMENT_METHODS,
 } from "@/lib/constants";
 import { formatAmount } from "@/lib/format";
 import { CURRENCY } from "@/lib/constants";
@@ -47,6 +48,7 @@ export function OrderForm({
     defaultValues: {
       projectId: projects[0]?.id ?? "",
       source: "INSTAGRAM",
+      paymentMethod: "CASH",
       governorate: "AL_ASIMAH",
       housingType: "HOUSE",
       orderDate: new Date().toISOString().slice(0, 10),
@@ -105,6 +107,12 @@ export function OrderForm({
             <Label>Order Source</Label>
             <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("source")}>
               {ORDER_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>Payment Method</Label>
+            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("paymentMethod")}>
+              {PAYMENT_METHODS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">

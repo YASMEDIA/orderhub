@@ -41,6 +41,7 @@ export const orderSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
   customerName: z.string().trim().min(2, "Customer name is required"),
   source: z.enum(["TIKTOK", "INSTAGRAM", "WHATSAPP", "WEBSITE"]),
+  paymentMethod: z.enum(["ONLINE", "CASH"]),
   orderDate: z.string().min(1, "Order date is required"),
   deliveryDate: z.string().min(1, "Delivery date is required"),
   governorate: z.enum([

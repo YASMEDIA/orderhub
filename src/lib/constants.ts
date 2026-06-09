@@ -24,6 +24,11 @@ export const HOUSING_TYPES = [
   { value: "APARTMENT", label: "Apartment" },
 ] as const;
 
+export const PAYMENT_METHODS = [
+  { value: "ONLINE", label: "Online Payment" },
+  { value: "CASH", label: "Cash" },
+] as const;
+
 export const PROJECT_STATUSES = [
   { value: "ACTIVE", label: "Active" },
   { value: "INACTIVE", label: "Inactive" },
