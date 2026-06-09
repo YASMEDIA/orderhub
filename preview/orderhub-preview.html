@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en" class="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OrderHub — UI Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
+          colors: {
+            border: "hsl(var(--border))",
+            input: "hsl(var(--input))",
+            background: "hsl(var(--background))",
+            foreground: "hsl(var(--foreground))",
+            primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+            secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+            muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+            accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+            card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+          },
+          borderRadius: { lg: "0.5rem", md: "calc(0.5rem - 2px)", sm: "calc(0.5rem - 4px)" },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      --background: 0 0% 100%; --foreground: 240 10% 3.9%;
+      --card: 0 0% 100%; --card-foreground: 240 10% 3.9%;
+      --primary: 240 5.9% 10%; --primary-foreground: 0 0% 98%;
+      --secondary: 240 4.8% 95.9%; --secondary-foreground: 240 5.9% 10%;
+      --muted: 240 4.8% 95.9%; --muted-foreground: 240 3.8% 46.1%;
+      --accent: 240 4.8% 95.9%; --accent-foreground: 240 5.9% 10%;
+      --border: 240 5.9% 90%; --input: 240 5.9% 90%;
+    }
+    .dark {
+      --background: 240 10% 3.9%; --foreground: 0 0% 98%;
+      --card: 240 10% 5.9%; --card-foreground: 0 0% 98%;
+      --primary: 0 0% 98%; --primary-foreground: 240 5.9% 10%;
+      --secondary: 240 3.7% 15.9%; --secondary-foreground: 0 0% 98%;
+      --muted: 240 3.7% 15.9%; --muted-foreground: 240 5% 64.9%;
+      --accent: 240 3.7% 15.9%; --accent-foreground: 0 0% 98%;
+      --border: 240 3.7% 15.9%; --input: 240 3.7% 15.9%;
+    }
+    body { font-family: Inter, system-ui, sans-serif; }
+    [data-screen] { display: none; }
+    [data-screen].active { display: block; }
+    .navbtn[aria-current="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  </style>
+</head>
+<body class="bg-background text-foreground">
+
+  <!-- Preview chrome -->
+  <div class="sticky top-0 z-50 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+    <span class="mr-2 text-sm font-bold">OrderHub Preview</span>
+    <div class="flex flex-wrap gap-1 text-sm">
+      <button onclick="show('login')"   class="screenbtn rounded-md px-3 py-1.5 hover:bg-accent">Login</button>
+      <button onclick="show('dashboard')" class="screenbtn rounded-md px-3 py-1.5 hover:bg-accent">Dashboard</button>
+      <button onclick="show('neworder')" class="screenbtn rounded-md px-3 py-1.5 hover:bg-accent">New Order</button>
+      <button onclick="show('orders')"  class="screenbtn rounded-md px-3 py-1.5 hover:bg-accent">Orders</button>
+      <button onclick="show('invoice')" class="screenbtn rounded-md px-3 py-1.5 hover:bg-accent">Public Invoice</button>
+    </div>
+    <button onclick="toggleTheme()" class="ml-auto rounded-md border px-3 py-1.5 text-sm hover:bg-accent">🌓 Theme</button>
+    <span class="hidden text-xs text-muted-foreground sm:inline">Static mockup — approximates the real Tailwind/shadcn UI</span>
+  </div>
+
+  <!-- ============ LOGIN ============ -->
+  <section data-screen="login">
+    <div class="flex min-h-[calc(100vh-49px)] items-center justify-center bg-muted/40 px-4">
+      <div class="w-full max-w-md">
+        <div class="mb-8 text-center">
+          <h1 class="text-3xl font-bold tracking-tight">OrderHub</h1>
+          <p class="mt-1 text-sm text-muted-foreground">Delivery Order Management Platform</p>
+        </div>
+        <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+          <div class="flex flex-col space-y-1.5 p-6">
+            <div class="text-lg font-semibold leading-none tracking-tight">Sign in</div>
+            <div class="text-sm text-muted-foreground">Enter your credentials to access the dashboard.</div>
+          </div>
+          <div class="space-y-4 p-6 pt-0">
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Email</label>
+              <input value="admin@orderhub.com" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium">Password</label>
+              <input type="password" value="************" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <button class="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90">Sign in</button>
+            <div class="text-center text-sm"><a class="text-muted-foreground hover:underline" href="#">Forgot your password?</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APP SHELL (shared by dashboard/neworder/orders) ============ -->
+  <template id="shell-template"></template>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section data-screen="dashboard">
+    <div class="flex min-h-[calc(100vh-49px)]">
+      <!-- sidebar -->
+      <aside class="hidden w-64 shrink-0 border-r bg-card lg:block">
+        <div class="flex h-16 items-center border-b px-6"><span class="text-xl font-bold tracking-tight">OrderHub</span></div>
+        <nav class="flex flex-col gap-1 p-3 text-sm">
+          <a class="navbtn flex items-center gap-3 rounded-md px-3 py-2 font-medium" aria-current="true" href="#"><i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="plus-circle" class="h-4 w-4"></i> New Order</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="shopping-cart" class="h-4 w-4"></i> Orders</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="folder-kanban" class="h-4 w-4"></i> Projects</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="users" class="h-4 w-4"></i> Users</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="bar-chart-3" class="h-4 w-4"></i> Reports</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="scroll-text" class="h-4 w-4"></i> Activity Logs</a>
+          <a class="flex items-center gap-3 rounded-md px-3 py-2 font-medium text-muted-foreground hover:bg-accent" href="#"><i data-lucide="settings" class="h-4 w-4"></i> Settings</a>
+        </nav>
+      </aside>
+      <!-- main -->
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header class="sticky top-[49px] z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
+          <span class="text-lg font-bold lg:hidden">OrderHub</span>
+          <div class="ml-auto flex items-center gap-2">
+            <span class="text-sm font-medium">Super Admin</span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">SA</span>
+          </div>
+        </header>
+        <main class="flex-1 space-y-6 p-4 md:p-6">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p class="text-sm text-muted-foreground">Overview of your delivery operations.</p>
+          </div>
+          <!-- stat cards -->
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="rounded-xl border bg-card p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-sm text-muted-foreground">Total Orders</p><p class="mt-1 text-2xl font-bold">29</p></div><div class="flex h-11 w-11 items-center justify-center rounded-lg bg-muted"><i data-lucide="shopping-cart" class="h-5 w-5"></i></div></div></div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-sm text-muted-foreground">Orders Today</p><p class="mt-1 text-2xl font-bold">4</p></div><div class="flex h-11 w-11 items-center justify-center rounded-lg bg-muted"><i data-lucide="clock" class="h-5 w-5"></i></div></div></div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-sm text-muted-foreground">Pending Orders</p><p class="mt-1 text-2xl font-bold">8</p></div><div class="flex h-11 w-11 items-center justify-center rounded-lg bg-muted"><i data-lucide="package-check" class="h-5 w-5"></i></div></div></div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-sm text-muted-foreground">Delivered</p><p class="mt-1 text-2xl font-bold">12</p></div><div class="flex h-11 w-11 items-center justify-center rounded-lg bg-muted"><i data-lucide="truck" class="h-5 w-5"></i></div></div></div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm"><div class="flex items-center justify-between"><div><p class="text-sm text-muted-foreground">Revenue</p><p class="mt-1 text-2xl font-bold">187.500 KD</p></div><div class="flex h-11 w-11 items-center justify-center rounded-lg bg-muted"><i data-lucide="wallet" class="h-5 w-5"></i></div></div></div>
+          </div>
+          <!-- charts -->
+          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border bg-card p-6 shadow-sm lg:col-span-2">
+              <p class="mb-4 font-semibold">Orders Per Day (last 14 days)</p>
+              <svg viewBox="0 0 560 180" class="w-full"><polyline fill="none" stroke="#6366f1" stroke-width="2"
+                points="0,140 43,120 86,150 129,90 172,110 215,60 258,95 301,70 344,130 387,80 430,100 473,55 516,85 560,40" />
+              </svg>
+            </div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm">
+              <p class="mb-4 font-semibold">Orders By Project</p>
+              <div class="flex h-44 items-end gap-4 px-2">
+                <div class="flex flex-1 flex-col items-center gap-2"><div class="w-full rounded-t bg-emerald-500" style="height:140px"></div><span class="text-xs text-muted-foreground">Husseini</span></div>
+                <div class="flex flex-1 flex-col items-center gap-2"><div class="w-full rounded-t bg-emerald-500" style="height:105px"></div><span class="text-xs text-muted-foreground">Bayan</span></div>
+                <div class="flex flex-1 flex-col items-center gap-2"><div class="w-full rounded-t bg-emerald-500" style="height:100px"></div><span class="text-xs text-muted-foreground">Q8 Florist</span></div>
+                <div class="flex flex-1 flex-col items-center gap-2"><div class="w-full rounded-t bg-emerald-500" style="height:80px"></div><span class="text-xs text-muted-foreground">Desert</span></div>
+              </div>
+            </div>
+            <div class="rounded-xl border bg-card p-6 shadow-sm">
+              <p class="mb-4 font-semibold">Orders By Source</p>
+              <div class="flex items-center justify-center gap-6">
+                <svg viewBox="0 0 36 36" class="h-40 w-40 -rotate-90">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" stroke-width="4" stroke-dasharray="35 65" stroke-dashoffset="0"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#10b981" stroke-width="4" stroke-dasharray="28 72" stroke-dashoffset="-35"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="22 78" stroke-dashoffset="-63"/>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ef4444" stroke-width="4" stroke-dasharray="15 85" stroke-dashoffset="-85"/>
+                </svg>
+                <ul class="space-y-1 text-sm">
+                  <li><span class="mr-2 inline-block h-3 w-3 rounded-sm" style="background:#6366f1"></span>Instagram</li>
+                  <li><span class="mr-2 inline-block h-3 w-3 rounded-sm" style="background:#10b981"></span>WhatsApp</li>
+                  <li><span class="mr-2 inline-block h-3 w-3 rounded-sm" style="background:#f59e0b"></span>TikTok</li>
+                  <li><span class="mr-2 inline-block h-3 w-3 rounded-sm" style="background:#ef4444"></span>Website</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <!-- recent orders -->
+          <div class="rounded-xl border bg-card shadow-sm">
+            <div class="p-6 pb-2 font-semibold">Recent Orders</div>
+            <table class="w-full text-sm">
+              <thead><tr class="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th class="h-11 px-4">Order #</th><th class="px-4">Customer</th><th class="px-4">Project</th><th class="px-4">Total</th><th class="px-4">Status</th><th class="px-4">Created</th></tr></thead>
+              <tbody>
+                <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000029</td><td class="p-4">Dana Al-Fadhli</td><td class="p-4">Husseini Sweets</td><td class="p-4">10.500 KD</td><td class="p-4"><span class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-600">Pending</span></td><td class="p-4">09/06/2026</td></tr>
+                <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000028</td><td class="p-4">Mishari Al-Adwani</td><td class="p-4">Q8 Florist</td><td class="p-4">6.500 KD</td><td class="p-4"><span class="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-600">Out For Delivery</span></td><td class="p-4">06/06/2026</td></tr>
+                <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000027</td><td class="p-4">Abdulaziz Khaled</td><td class="p-4">Bayan Bakery</td><td class="p-4">14.250 KD</td><td class="p-4"><span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-600">Delivered</span></td><td class="p-4">29/05/2026</td></tr>
+                <tr><td class="p-4 font-medium">ORD-2026-000026</td><td class="p-4">Hessa Al-Rashidi</td><td class="p-4">Husseini Sweets</td><td class="p-4">6.000 KD</td><td class="p-4"><span class="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-medium text-red-600">Cancelled</span></td><td class="p-4">01/06/2026</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NEW ORDER ============ -->
+  <section data-screen="neworder">
+    <div class="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+      <div><h1 class="text-2xl font-bold tracking-tight">New Order</h1><p class="text-sm text-muted-foreground">Create a delivery order and generate its receipt.</p></div>
+
+      <div class="rounded-xl border bg-card shadow-sm">
+        <div class="p-6 pb-2 font-semibold">Order Details</div>
+        <div class="grid grid-cols-1 gap-4 p-6 pt-2 md:grid-cols-2">
+          <div class="space-y-2"><label class="text-sm font-medium">Project</label><select class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Husseini Sweets</option></select></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Customer Name</label><input value="Ahmad Ali" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Order Source</label><select class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Instagram</option></select></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2"><label class="text-sm font-medium">Order Date</label><input value="09/06/2026" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+            <div class="space-y-2"><label class="text-sm font-medium">Delivery Date</label><input value="10/06/2026" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card shadow-sm">
+        <div class="p-6 pb-2 font-semibold">Customer Address</div>
+        <div class="grid grid-cols-1 gap-4 p-6 pt-2 md:grid-cols-2">
+          <div class="space-y-2"><label class="text-sm font-medium">Governorate</label><select class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Hawalli</option></select></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Area <span class="text-xs text-muted-foreground">(updates with governorate)</span></label><select class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Salmiya</option><option>Jabriya</option><option>Bayan</option></select></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Block</label><input value="10" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Street</label><input value="Amman St" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Housing Type</label><select class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Apartment</option></select></div>
+          <div class="space-y-2"><label class="text-sm font-medium">Building Number</label><input value="25" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card shadow-sm">
+        <div class="p-6 pb-2 font-semibold">Order Items</div>
+        <div class="space-y-3 p-6 pt-2">
+          <div class="grid grid-cols-12 items-end gap-2">
+            <div class="col-span-5 space-y-2"><label class="text-sm font-medium">Product Name</label><input value="Husseini Turbah" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+            <div class="col-span-2 space-y-2"><label class="text-sm font-medium">Qty</label><input value="4" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+            <div class="col-span-2 space-y-2"><label class="text-sm font-medium">Unit Price</label><input value="2.000" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+            <div class="col-span-2 space-y-2"><label class="text-sm font-medium">Total</label><div class="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">8.000</div></div>
+            <div class="col-span-1"><button class="flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent"><i data-lucide="trash-2" class="h-4 w-4 text-red-500"></i></button></div>
+          </div>
+          <button class="inline-flex h-10 items-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent"><i data-lucide="plus" class="h-4 w-4"></i> Add Item</button>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card shadow-sm">
+        <div class="p-6 pb-2 font-semibold">Totals</div>
+        <div class="space-y-4 p-6 pt-2">
+          <div class="max-w-xs space-y-2"><label class="text-sm font-medium">Delivery Fee (KD) — 0 means Free</label><input value="1.000" class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" /></div>
+          <div class="ml-auto max-w-xs space-y-1 text-sm">
+            <div class="flex justify-between"><span>Subtotal</span><span>8.000 KD</span></div>
+            <div class="flex justify-between"><span>Delivery Fee</span><span>1.000 KD</span></div>
+            <div class="flex justify-between border-t pt-1 text-base font-bold"><span>Grand Total</span><span>9.000 KD</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button class="inline-flex h-10 items-center rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent">Cancel</button>
+        <button class="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Create Order</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ORDERS LIST ============ -->
+  <section data-screen="orders">
+    <div class="space-y-6 p-4 md:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div><h1 class="text-2xl font-bold tracking-tight">Orders</h1><p class="text-sm text-muted-foreground">29 orders found.</p></div>
+        <button class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"><i data-lucide="plus" class="h-4 w-4"></i> New Order</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input placeholder="Search customer or order #" class="h-10 w-56 rounded-md border border-input bg-background px-3 text-sm" />
+        <select class="h-10 rounded-md border border-input bg-background px-3 text-sm"><option>All projects</option></select>
+        <select class="h-10 rounded-md border border-input bg-background px-3 text-sm"><option>All statuses</option></select>
+        <input value="" placeholder="dd/mm/yyyy" class="h-10 w-40 rounded-md border border-input bg-background px-3 text-sm" />
+        <button class="h-10 rounded-md px-3 text-sm hover:bg-accent">Clear</button>
+      </div>
+      <div class="rounded-xl border bg-card shadow-sm">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <th class="h-11 px-4">Order #</th><th class="px-4">Customer</th><th class="px-4">Summary</th><th class="px-4">Project</th><th class="px-4">Total</th><th class="px-4">Status</th><th class="px-4">Created By</th><th class="px-4">Created</th><th class="px-4"></th></tr></thead>
+          <tbody>
+            <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000029</td><td class="p-4">Dana Al-Fadhli</td><td class="p-4 text-muted-foreground">2 items · Pistachio Knafeh, Date Maamoul</td><td class="p-4">Husseini Sweets</td><td class="p-4">10.500 KD</td><td class="p-4"><span class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-600">Pending</span></td><td class="p-4">Maya Al-Saleh</td><td class="p-4">09/06/2026</td><td class="p-4"><i data-lucide="more-horizontal" class="h-4 w-4"></i></td></tr>
+            <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000027</td><td class="p-4">Abdulaziz Khaled</td><td class="p-4 text-muted-foreground">2 items · Rosewater Lokum, Walnut Maamoul</td><td class="p-4">Bayan Bakery</td><td class="p-4">14.250 KD</td><td class="p-4"><span class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-600">Delivered</span></td><td class="p-4">Super Admin</td><td class="p-4">29/05/2026</td><td class="p-4"><i data-lucide="more-horizontal" class="h-4 w-4"></i></td></tr>
+            <tr class="border-b"><td class="p-4 font-medium">ORD-2026-000024</td><td class="p-4">Noura Saleh</td><td class="p-4 text-muted-foreground">3 items · Turbah, Walnut Maamoul, Lokum</td><td class="p-4">Husseini Sweets</td><td class="p-4">12.000 KD</td><td class="p-4"><span class="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-600">Preparing</span></td><td class="p-4">Maya Al-Saleh</td><td class="p-4">03/06/2026</td><td class="p-4"><i data-lucide="more-horizontal" class="h-4 w-4"></i></td></tr>
+            <tr><td class="p-4 font-medium">ORD-2026-000018</td><td class="p-4">Yousef Al-Mutairi</td><td class="p-4 text-muted-foreground">1 item · Saffron Ghraybeh</td><td class="p-4">Q8 Florist</td><td class="p-4">8.250 KD</td><td class="p-4"><span class="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-600">Ready</span></td><td class="p-4">Sample Employee</td><td class="p-4">31/05/2026</td><td class="p-4"><i data-lucide="more-horizontal" class="h-4 w-4"></i></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-center gap-2">
+        <button class="h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground">1</button>
+        <button class="h-9 rounded-md border px-3 text-sm hover:bg-accent">2</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PUBLIC INVOICE ============ -->
+  <section data-screen="invoice">
+    <div class="min-h-[calc(100vh-49px)] bg-muted/40 px-4 py-8">
+      <div class="mx-auto max-w-md overflow-hidden rounded-2xl border bg-background shadow-sm">
+        <div class="border-b bg-primary px-6 py-5 text-primary-foreground">
+          <h1 class="text-xl font-bold">Husseini Sweets</h1>
+          <p class="text-sm opacity-90">+965 5000 0000</p>
+        </div>
+        <div class="space-y-5 p-6">
+          <div class="flex items-center justify-between">
+            <div><p class="text-xs text-muted-foreground">Order Number</p><p class="font-semibold">ORD-2026-000001</p></div>
+            <span class="rounded-full bg-muted px-3 py-1 text-xs font-medium">Delivered</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><p class="text-xs text-muted-foreground">Customer</p><p class="font-medium">Ahmad Ali</p></div>
+            <div><p class="text-xs text-muted-foreground">Delivery Date</p><p class="font-medium">10/06/2026</p></div>
+          </div>
+          <div class="rounded-lg border p-3 text-sm">
+            <p class="text-xs text-muted-foreground">Delivery Address</p>
+            <p class="font-medium">Hawalli — Salmiya</p>
+            <p class="text-muted-foreground">Block 10 · Street Amman St · Apartment · Building 25 · Floor 3 · Apt 12</p>
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Products</p>
+            <div class="divide-y rounded-lg border">
+              <div class="flex items-center justify-between px-3 py-2 text-sm"><div><p class="font-medium">Husseini Turbah Box</p><p class="text-xs text-muted-foreground">4 × 2.000</p></div><p class="font-medium">8.000</p></div>
+              <div class="flex items-center justify-between px-3 py-2 text-sm"><div><p class="font-medium">Date Maamoul</p><p class="text-xs text-muted-foreground">2 × 1.500</p></div><p class="font-medium">3.000</p></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between"><span class="text-muted-foreground">Subtotal</span><span>11.000 KD</span></div>
+            <div class="flex justify-between"><span class="text-muted-foreground">Delivery Fee</span><span>1.000 KD</span></div>
+            <div class="flex justify-between border-t pt-2 text-lg font-bold"><span>Total</span><span>12.000 KD</span></div>
+          </div>
+        </div>
+        <div class="border-t px-6 py-4 text-center text-xs text-muted-foreground">Powered by OrderHub</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function show(id) {
+      document.querySelectorAll('[data-screen]').forEach(s => s.classList.toggle('active', s.dataset.screen === id));
+      document.querySelectorAll('.screenbtn').forEach(b => b.classList.remove('bg-accent','font-semibold'));
+      event && event.target && event.target.classList.add('bg-accent','font-semibold');
+      window.scrollTo(0, 0);
+      if (window.lucide) lucide.createIcons();
+    }
+    function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+    // default screen
+    show('dashboard');
+    document.querySelector('.screenbtn:nth-child(2)')?.classList.add('bg-accent','font-semibold');
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>
