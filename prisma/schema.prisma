@@ -82,9 +82,38 @@ model Project {
   status      ProjectStatus       @default(ACTIVE)
   assignments ProjectAssignment[]
   orders      Order[]
+  products    Product[]
   activityLogs ActivityLog[]
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+}
+
+// A catalog product belonging to a single project, with quantity-based
+// tiered pricing (the more you buy, the lower the unit price).
+model Product {
+  id         String        @id @default(cuid())
+  name       String
+  basePrice  Float         @default(0) // unit price for quantity >= 1
+  isActive   Boolean       @default(true)
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String
+  tiers      ProductTier[]
+  orderItems OrderItem[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([projectId])
+}
+
+// "From minQuantity units, unit price becomes unitPrice." e.g. (5, 1.8), (10, 1.7).
+model ProductTier {
+  id          String  @id @default(cuid())
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  minQuantity Int
+  unitPrice   Float
+
+  @@index([productId])
 }
 
 // M:N join between users and projects.
@@ -146,15 +175,18 @@ model Order {
 }
 
 model OrderItem {
-  id          String  @id @default(cuid())
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId     String
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId   String?
   productName String
   quantity    Int
   unitPrice   Float
   lineTotal   Float
 
   @@index([orderId])
+  @@index([productId])
 }
 
 model ActivityLog {

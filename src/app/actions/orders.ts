@@ -28,6 +28,7 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
     const { subtotal, grandTotal } = totals;
     const lineItems = totals.lineItems.map((line, i) => ({
       productName: data.items[i].productName,
+      productId: data.items[i].productId || null,
       ...line,
     }));
     const year = new Date(data.orderDate).getFullYear();
@@ -96,6 +97,7 @@ export async function updateOrder(id: string, input: unknown): Promise<OrderActi
     const { subtotal, grandTotal } = totals;
     const lineItems = totals.lineItems.map((line, i) => ({
       productName: data.items[i].productName,
+      productId: data.items[i].productId || null,
       ...line,
     }));
 

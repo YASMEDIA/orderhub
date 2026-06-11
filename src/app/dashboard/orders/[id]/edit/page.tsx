@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canAccessProject } from "@/lib/rbac";
 import { getAccessibleProjects } from "@/app/actions/projects";
+import { getAccessibleProducts } from "@/app/actions/products";
 import { OrderForm } from "@/components/orders/order-form";
 
 export default async function EditOrderPage({ params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +14,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
   if (!order) notFound();
   if (!canAccessProject(user, order.projectId)) redirect("/dashboard/orders");
 
-  const projects = await getAccessibleProjects();
+  const [projects, products] = await Promise.all([getAccessibleProjects(), getAccessibleProducts()]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -24,6 +25,13 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
       <OrderForm
         orderId={order.id}
         projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+        products={products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          projectId: p.projectId,
+          basePrice: p.basePrice,
+          tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+        }))}
         defaultValues={{
           projectId: order.projectId,
           customerName: order.customerName,
@@ -42,7 +50,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
           apartmentNumber: order.apartmentNumber ?? "",
           locationUrl: order.locationUrl ?? "",
           deliveryFee: order.deliveryFee,
-          items: order.items.map((it) => ({ productName: it.productName, quantity: it.quantity, unitPrice: it.unitPrice })),
+          items: order.items.map((it) => ({ productId: it.productId ?? "", productName: it.productName, quantity: it.quantity, unitPrice: it.unitPrice })),
         }}
       />
     </div>

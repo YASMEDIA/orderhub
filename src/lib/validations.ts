@@ -32,10 +32,25 @@ export const userUpdateSchema = userCreateSchema
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
 export const orderItemSchema = z.object({
+  productId: z.string().optional().or(z.literal("").transform(() => undefined)),
   productName: z.string().trim().min(1, "Product name required"),
   quantity: z.coerce.number().int().min(1, "Min 1"),
   unitPrice: z.coerce.number().min(0, "Cannot be negative"),
 });
+
+export const productTierSchema = z.object({
+  minQuantity: z.coerce.number().int().min(2, "Tier quantity must be 2 or more"),
+  unitPrice: z.coerce.number().min(0, "Cannot be negative"),
+});
+
+export const productSchema = z.object({
+  name: z.string().trim().min(1, "Product name is required"),
+  projectId: z.string().min(1, "Project is required"),
+  basePrice: z.coerce.number().min(0, "Cannot be negative"),
+  isActive: z.coerce.boolean().default(true),
+  tiers: z.array(productTierSchema).default([]),
+});
+export type ProductInput = z.infer<typeof productSchema>;
 
 export const orderSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
