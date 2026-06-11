@@ -120,6 +120,7 @@ model Order {
   buildingNumber String
   floor          String?
   apartmentNumber String?
+  locationUrl     String  @default("") // customer's shared map pin / coordinates (optional)
 
   deliveryFee   Float         @default(0)
   subtotal      Float         @default(0)

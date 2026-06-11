@@ -5,6 +5,7 @@ import { FileDown, QrCode } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canAccessProject } from "@/lib/rbac";
 import { qrDataUrl, invoiceUrl } from "@/lib/qr";
+import { buildMapsLink, isExactLocation } from "@/lib/location";
 import { getSettings } from "@/app/actions/settings";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
 import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_SOURCES, PAYMENT_METHODS } from "@/lib/constants";
@@ -68,6 +69,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <Detail label="Building" value={order.buildingNumber} />
               <Detail label="Floor" value={order.floor || "—"} />
               <Detail label="Apartment" value={order.apartmentNumber || "—"} />
+              <Detail
+                label={`Location${isExactLocation(order) ? " (exact pin)" : " (approx.)"}`}
+                value={
+                  <a href={buildMapsLink(order)} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Open in Maps
+                  </a>
+                }
+              />
             </dl>
           </CardContent>
         </Card>

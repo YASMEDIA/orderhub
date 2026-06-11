@@ -40,6 +40,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
           buildingNumber: order.buildingNumber,
           floor: order.floor ?? "",
           apartmentNumber: order.apartmentNumber ?? "",
+          locationUrl: order.locationUrl ?? "",
           deliveryFee: order.deliveryFee,
           items: order.items.map((it) => ({ productName: it.productName, quantity: it.quantity, unitPrice: it.unitPrice })),
         }}
