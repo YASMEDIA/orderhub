@@ -15,6 +15,7 @@ import {
 } from "@/lib/constants";
 import { formatAmount } from "@/lib/format";
 import { CURRENCY } from "@/lib/constants";
+import { priceForQuantity } from "@/lib/pricing";
 import { createOrder, updateOrder } from "@/app/actions/orders";
 import { useToast } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,13 +24,22 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 type ProjectOption = { id: string; name: string };
+type ProductOption = {
+  id: string;
+  name: string;
+  projectId: string;
+  basePrice: number;
+  tiers: { minQuantity: number; unitPrice: number }[];
+};
 
 export function OrderForm({
   projects,
+  products = [],
   defaultValues,
   orderId,
 }: {
   projects: ProjectOption[];
+  products?: ProductOption[];
   defaultValues?: Partial<OrderInput>;
   orderId?: string;
 }) {
@@ -54,7 +64,7 @@ export function OrderForm({
       orderDate: new Date().toISOString().slice(0, 10),
       deliveryDate: new Date().toISOString().slice(0, 10),
       deliveryFee: 0,
-      items: [{ productName: "", quantity: 1, unitPrice: 0 }],
+      items: [{ productId: "", productName: "", quantity: 1, unitPrice: 0 }],
       ...defaultValues,
     },
   });
@@ -62,10 +72,36 @@ export function OrderForm({
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
   const governorate = watch("governorate");
+  const projectId = watch("projectId");
   const items = watch("items");
   const deliveryFee = Number(watch("deliveryFee")) || 0;
 
   const areas = useMemo(() => AREAS_BY_GOVERNORATE[governorate] ?? [], [governorate]);
+
+  const productMap = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const projectProducts = useMemo(
+    () => products.filter((p) => p.projectId === projectId),
+    [products, projectId],
+  );
+
+  // Pick a catalog product for a line: fills name + tiered unit price for the qty.
+  function applyProduct(index: number, productId: string) {
+    setValue(`items.${index}.productId`, productId);
+    if (!productId) return; // "Custom item"
+    const prod = productMap.get(productId);
+    if (!prod) return;
+    const qty = Number(items?.[index]?.quantity) || 1;
+    setValue(`items.${index}.productName`, prod.name);
+    setValue(`items.${index}.unitPrice`, priceForQuantity(prod.basePrice, prod.tiers, qty));
+  }
+
+  // When the quantity changes on a catalog line, recompute the tiered price.
+  function recomputePrice(index: number, qtyValue: string) {
+    const pid = items?.[index]?.productId;
+    if (!pid) return;
+    const prod = productMap.get(pid);
+    if (prod) setValue(`items.${index}.unitPrice`, priceForQuantity(prod.basePrice, prod.tiers, Number(qtyValue) || 0));
+  }
 
   const subtotal = useMemo(
     () => (items ?? []).reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0),
@@ -93,7 +129,15 @@ export function OrderForm({
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Project</Label>
-            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("projectId")}>
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              {...register("projectId")}
+              onChange={(e) => {
+                setValue("projectId", e.target.value);
+                // Clear catalog selections that belong to the previous project.
+                (items ?? []).forEach((_, i) => setValue(`items.${i}.productId`, ""));
+              }}
+            >
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             {err(errors.projectId?.message)}
@@ -204,37 +248,64 @@ export function OrderForm({
           {fields.map((field, i) => {
             const qty = Number(items?.[i]?.quantity) || 0;
             const price = Number(items?.[i]?.unitPrice) || 0;
+            const selectedProductId = items?.[i]?.productId ?? "";
+            const qtyReg = register(`items.${i}.quantity`);
             return (
-              <div key={field.id} className="grid grid-cols-12 items-end gap-2">
-                <div className="col-span-12 space-y-2 sm:col-span-5">
-                  <Label>Product Name</Label>
-                  <Input {...register(`items.${i}.productName`)} placeholder="e.g. Husseini Turbah" />
-                  {err(errors.items?.[i]?.productName?.message)}
-                </div>
-                <div className="col-span-4 space-y-2 sm:col-span-2">
-                  <Label>Qty</Label>
-                  <Input type="number" min={1} {...register(`items.${i}.quantity`)} />
-                </div>
-                <div className="col-span-4 space-y-2 sm:col-span-2">
-                  <Label>Unit Price</Label>
-                  <Input type="number" step="0.001" min={0} {...register(`items.${i}.unitPrice`)} />
-                </div>
-                <div className="col-span-3 space-y-2 sm:col-span-2">
-                  <Label>Total</Label>
-                  <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
-                    {formatAmount(qty * price)}
+              <div key={field.id} className="space-y-2 rounded-md border p-3">
+                {projectProducts.length > 0 ? (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Catalog Product</Label>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      value={selectedProductId}
+                      onChange={(e) => applyProduct(i, e.target.value)}
+                    >
+                      <option value="">— Custom item —</option>
+                      {projectProducts.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-                <div className="col-span-1">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => fields.length > 1 && remove(i)} disabled={fields.length === 1}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                ) : null}
+                <div className="grid grid-cols-12 items-end gap-2">
+                  <div className="col-span-12 space-y-1 sm:col-span-5">
+                    <Label className="text-xs">Product Name</Label>
+                    <Input {...register(`items.${i}.productName`)} placeholder="e.g. Husseini Turbah" />
+                    {err(errors.items?.[i]?.productName?.message)}
+                  </div>
+                  <div className="col-span-4 space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Qty</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      {...qtyReg}
+                      onChange={(e) => {
+                        qtyReg.onChange(e);
+                        recomputePrice(i, e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="col-span-4 space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Unit Price</Label>
+                    <Input type="number" step="0.001" min={0} {...register(`items.${i}.unitPrice`)} />
+                  </div>
+                  <div className="col-span-3 space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Total</Label>
+                    <div className="flex h-10 items-center rounded-md border bg-muted px-3 text-sm">
+                      {formatAmount(qty * price)}
+                    </div>
+                  </div>
+                  <div className="col-span-1">
+                    <Button type="button" variant="ghost" size="icon" onClick={() => fields.length > 1 && remove(i)} disabled={fields.length === 1}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
           })}
           {err(errors.items?.message)}
-          <Button type="button" variant="outline" onClick={() => append({ productName: "", quantity: 1, unitPrice: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ productId: "", productName: "", quantity: 1, unitPrice: 0 })}>
             <Plus className="h-4 w-4" /> Add Item
           </Button>
         </CardContent>

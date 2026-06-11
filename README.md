@@ -12,7 +12,8 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **PostgreSQL + Prisma**,
 
 - **Auth & RBAC** — Login, logout, forgot/reset password, JWT sessions, 3 roles (Super Admin, Admin, Employee) enforced in every server action and on the API.
 - **Projects** — CRUD for businesses; project info auto-appears on receipts. Project-scoped access for non-super-admins.
-- **Orders** — Fast create workflow with dynamic governorate → area dropdowns, unlimited line items with live totals, optional delivery fee, sequential `ORD-YYYY-000001` numbers (transaction-safe).
+- **Products** — Per-project catalog with quantity-based tiered pricing (the more units, the lower the unit price). Products surface in the order form for their project and auto-fill the unit price for the chosen quantity.
+- **Orders** — Fast create workflow with dynamic governorate → area dropdowns, unlimited line items with live totals (catalog products or custom), optional delivery fee, sequential `ORD-YYYY-000001` numbers (transaction-safe).
 - **Thermal receipt PDF** — Clean black-and-white 80mm layout with embedded QR code.
 - **QR codes** — Each order has a public `/invoice/:publicId` page; high-error-correction QR stays scannable at sticker size. Downloadable PNG.
 - **Public invoice page** — Mobile-friendly, no login required.
