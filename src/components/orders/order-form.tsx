@@ -188,6 +188,13 @@ export function OrderForm({
             <Label>Apartment Number (optional)</Label>
             <Input {...register("apartmentNumber")} />
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Customer Location (optional)</Label>
+            <Input {...register("locationUrl")} placeholder="Paste Google Maps link or coordinates e.g. 29.3399, 48.0934" />
+            <p className="text-xs text-muted-foreground">
+              Paste the pin the customer shares for an exact &quot;Open Location&quot; button on the invoice. Leave empty to use the typed address (approximate).
+            </p>
+          </div>
         </CardContent>
       </Card>
 

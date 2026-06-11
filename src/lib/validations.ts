@@ -64,6 +64,7 @@ export const orderSchema = z.object({
     .trim()
     .optional()
     .or(z.literal("").transform(() => undefined)),
+  locationUrl: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
   deliveryFee: z.coerce.number().min(0).default(0),
   items: z.array(orderItemSchema).min(1, "Add at least one item"),
 });

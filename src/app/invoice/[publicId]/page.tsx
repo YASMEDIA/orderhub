@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
 import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
+import { buildMapsLink, isExactLocation } from "@/lib/location";
 
 export const metadata: Metadata = { title: "Invoice — OrderHub" };
 
@@ -58,6 +59,17 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
             <p className="text-xs text-muted-foreground">Delivery Address</p>
             <p className="font-medium">{labelFor(GOVERNORATES, order.governorate)} — {order.area}</p>
             <p className="text-muted-foreground">{addressLine}</p>
+            <a
+              href={buildMapsLink(order)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              📍 Open Location in Maps
+            </a>
+            {!isExactLocation(order) ? (
+              <p className="mt-1 text-center text-[11px] text-muted-foreground">Approximate — searches the address</p>
+            ) : null}
           </div>
 
           <div>
