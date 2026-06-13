@@ -160,7 +160,6 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
           ) : (
             products.map((p) => {
               const q = qty[p.id] || 0;
-              const unit = priceForQuantity(p.basePrice, p.tiers, Math.max(1, q));
               return (
                 <div key={p.id} className="overflow-hidden rounded-lg border">
                   {p.images && p.images.length > 0 ? (
@@ -178,13 +177,8 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
                         <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
                       ) : null}
                       <p className="mt-0.5 text-sm font-semibold">
-                        {formatAmount(q > 0 ? unit : p.basePrice)} {CURRENCY}
+                        {formatAmount(p.basePrice)} {CURRENCY}
                       </p>
-                      {p.tiers.length > 0 ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")}
-                        </p>
-                      ) : null}
                     </div>
                     {q > 0 ? (
                       <div className="flex shrink-0 items-center gap-2">
