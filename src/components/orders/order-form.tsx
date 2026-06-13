@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 type ProjectOption = { id: string; name: string };
 type ProductOption = {
@@ -73,6 +74,7 @@ export function OrderForm({
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
   const governorate = watch("governorate");
+  const area = watch("area");
   const projectId = watch("projectId");
   const items = watch("items");
   const deliveryFee = Number(watch("deliveryFee")) || 0;
@@ -200,17 +202,17 @@ export function OrderForm({
           </div>
           <div className="space-y-2">
             <Label>Area</Label>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              {...register("area")}
-              onChange={(e) => {
-                setValue("area", e.target.value);
-                setValue("deliveryFee", deliveryFeeFor(governorate, e.target.value)); // auto delivery fee
+            <SearchableSelect
+              value={area ?? ""}
+              options={areas}
+              placeholder="Search area…"
+              onChange={(v) => {
+                setValue("area", v, { shouldValidate: true });
+                setValue("deliveryFee", deliveryFeeFor(governorate, v)); // auto delivery fee
               }}
-            >
-              <option value="">Select area…</option>
-              {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
+            />
+            {/* Registered so the value is always part of the form payload + validation. */}
+            <input type="hidden" {...register("area")} />
             {err(errors.area?.message)}
           </div>
           <div className="space-y-2">

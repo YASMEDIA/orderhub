@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useToast } from "@/components/ui/toast";
 
 type Product = {
@@ -103,6 +104,10 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
     e.preventDefault();
     if (cart.length === 0) {
       setStep("products");
+      return;
+    }
+    if (!form.area) {
+      toast({ title: "Select your area", description: "Please choose your delivery area.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -305,10 +310,7 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
             </div>
             <div className="space-y-2">
               <Label>Area</Label>
-              <select className={selectCls} value={form.area} onChange={(e) => set("area", e.target.value)} required>
-                <option value="">Select area…</option>
-                {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
+              <SearchableSelect value={form.area} options={areas} placeholder="Search area…" onChange={(v) => set("area", v)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Block</Label><Input className="h-11" value={form.block} onChange={(e) => set("block", e.target.value)} required /></div>
