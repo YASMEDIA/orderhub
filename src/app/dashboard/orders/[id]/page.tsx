@@ -41,7 +41,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <h1 className="text-2xl font-bold tracking-tight">{order.orderNumber}</h1>
             <StatusBadge status={order.status} />
           </div>
-          <p className="text-sm text-muted-foreground">{order.project.name} · created by {order.createdBy.fullName}</p>
+          <p className="text-sm text-muted-foreground">{order.project.name} · created by {order.createdBy?.fullName ?? "Online Store"}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline"><a href={`/api/orders/${order.id}/pdf`}><FileDown className="h-4 w-4" /> Download Receipt PDF</a></Button>

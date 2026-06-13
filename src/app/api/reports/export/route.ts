@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       Subtotal: o.subtotal,
       "Delivery Fee": o.deliveryFee,
       "Grand Total": o.grandTotal,
-      "Created By": o.createdBy.fullName,
+      "Created By": o.createdBy?.fullName ?? "Online Store",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();

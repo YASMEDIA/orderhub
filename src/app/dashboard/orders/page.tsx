@@ -103,7 +103,7 @@ export default async function OrdersPage({
                     <TableCell>{o.project.name}</TableCell>
                     <TableCell>{formatMoney(o.grandTotal)}</TableCell>
                     <TableCell><StatusBadge status={o.status} /></TableCell>
-                    <TableCell>{o.createdBy.fullName}</TableCell>
+                    <TableCell>{o.createdBy?.fullName ?? "Online Store"}</TableCell>
                     <TableCell>{formatDate(o.createdAt)}</TableCell>
                     <TableCell><OrderRowActions orderId={o.id} status={o.status} role={user.role} /></TableCell>
                   </TableRow>

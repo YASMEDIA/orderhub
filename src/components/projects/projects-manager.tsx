@@ -67,7 +67,14 @@ export function ProjectsManager({ projects }: { projects: (Project & { _count: {
               ) : (
                 projects.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {p.name}
+                      {p.storeEnabled && p.slug ? (
+                        <a href={`/store/${p.slug}`} target="_blank" rel="noopener noreferrer" className="block text-xs font-normal text-primary hover:underline">
+                          /store/{p.slug}
+                        </a>
+                      ) : null}
+                    </TableCell>
                     <TableCell>{p.phone || "—"}</TableCell>
                     <TableCell>{p._count.orders}</TableCell>
                     <TableCell>
@@ -103,6 +110,24 @@ export function ProjectsManager({ projects }: { projects: (Project & { _count: {
                 <option value="INACTIVE">Inactive</option>
               </select>
             </div>
+
+            <div className="rounded-md border p-3 space-y-3">
+              <p className="text-sm font-semibold">Online Store</p>
+              <div className="space-y-2">
+                <Label>Store Link (slug)</Label>
+                <Input name="slug" defaultValue={editing?.slug ?? ""} placeholder="e.g. 313-boutique" />
+                <p className="text-xs text-muted-foreground">Public page: /store/&lt;slug&gt; — lowercase letters, numbers and hyphens.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Logo URL (optional)</Label>
+                <Input name="logoUrl" type="url" defaultValue={editing?.logoUrl ?? ""} placeholder="https://...logo.png" />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="storeEnabled" defaultChecked={editing?.storeEnabled ?? false} />
+                Enable public storefront
+              </label>
+            </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={pending}>{editing ? "Save" : "Create"}</Button>
