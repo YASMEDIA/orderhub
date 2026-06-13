@@ -80,6 +80,9 @@ model Project {
   instagram   String?
   tiktok      String?
   status      ProjectStatus       @default(ACTIVE)
+  slug         String?            @unique // public storefront URL: /store/:slug
+  logoUrl      String?
+  storeEnabled Boolean            @default(false)
   assignments ProjectAssignment[]
   orders      Order[]
   products    Product[]
@@ -162,8 +165,9 @@ model Order {
   project   Project @relation(fields: [projectId], references: [id])
   projectId String
 
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
+  // Nullable: orders placed through the public storefront have no internal creator.
+  createdBy   User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

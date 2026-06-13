@@ -14,8 +14,48 @@ export const projectSchema = z.object({
   instagram: optionalUrl,
   tiktok: optionalUrl,
   status: z.enum(["ACTIVE", "INACTIVE"]),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and hyphens only")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  logoUrl: optionalUrl,
+  storeEnabled: z.coerce.boolean().default(false),
 });
 export type ProjectInput = z.infer<typeof projectSchema>;
+
+// Public storefront order: customer picks catalog products (by id) and the
+// server computes prices — never trust client-supplied prices.
+export const publicOrderItemSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.coerce.number().int().min(1),
+});
+
+export const publicOrderSchema = z.object({
+  customerName: z.string().trim().min(2, "Your name is required"),
+  customerPhone: z.string().trim().min(6, "A valid phone number is required"),
+  governorate: z.enum([
+    "AL_ASIMAH",
+    "HAWALLI",
+    "FARWANIYA",
+    "AHMADI",
+    "MUBARAK_AL_KABEER",
+    "JAHRA",
+  ]),
+  area: z.string().trim().min(1, "Area is required"),
+  block: z.string().trim().min(1, "Block is required"),
+  street: z.string().trim().min(1, "Street is required"),
+  housingType: z.enum(["HOUSE", "APARTMENT"]),
+  buildingNumber: z.string().trim().min(1, "Building number is required"),
+  floor: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
+  apartmentNumber: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
+  locationUrl: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
+  paymentMethod: z.enum(["ONLINE", "CASH"]),
+  items: z.array(publicOrderItemSchema).min(1, "Add at least one product"),
+});
+export type PublicOrderInput = z.infer<typeof publicOrderSchema>;
 
 export const userCreateSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required"),

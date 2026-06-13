@@ -16,7 +16,14 @@ function parse(formData: FormData) {
     instagram: formData.get("instagram") ?? "",
     tiktok: formData.get("tiktok") ?? "",
     status: formData.get("status"),
+    slug: formData.get("slug") ?? "",
+    logoUrl: formData.get("logoUrl") ?? "",
+    storeEnabled: formData.get("storeEnabled") === "on" || formData.get("storeEnabled") === "true",
   });
+}
+
+function isUniqueSlugError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2002";
 }
 
 export async function createProject(formData: FormData): Promise<ProjectActionResult> {
@@ -24,10 +31,15 @@ export async function createProject(formData: FormData): Promise<ProjectActionRe
   const parsed = parse(formData);
   if (!parsed.success) return { ok: false, message: parsed.error.errors[0]?.message ?? "Invalid input" };
 
-  const project = await prisma.project.create({ data: parsed.data });
-  await logActivity({ userId: user.id, action: "Create Project", detail: project.name, projectId: project.id });
-  revalidatePath("/dashboard/projects");
-  return { ok: true, message: "Project created" };
+  try {
+    const project = await prisma.project.create({ data: parsed.data });
+    await logActivity({ userId: user.id, action: "Create Project", detail: project.name, projectId: project.id });
+    revalidatePath("/dashboard/projects");
+    return { ok: true, message: "Project created" };
+  } catch (err) {
+    if (isUniqueSlugError(err)) return { ok: false, message: "That storefront link (slug) is already taken." };
+    throw err;
+  }
 }
 
 export async function updateProject(id: string, formData: FormData): Promise<ProjectActionResult> {
@@ -35,10 +47,15 @@ export async function updateProject(id: string, formData: FormData): Promise<Pro
   const parsed = parse(formData);
   if (!parsed.success) return { ok: false, message: parsed.error.errors[0]?.message ?? "Invalid input" };
 
-  await prisma.project.update({ where: { id }, data: parsed.data });
-  await logActivity({ userId: user.id, action: "Edit Project", detail: parsed.data.name, projectId: id });
-  revalidatePath("/dashboard/projects");
-  return { ok: true, message: "Project updated" };
+  try {
+    await prisma.project.update({ where: { id }, data: parsed.data });
+    await logActivity({ userId: user.id, action: "Edit Project", detail: parsed.data.name, projectId: id });
+    revalidatePath("/dashboard/projects");
+    return { ok: true, message: "Project updated" };
+  } catch (err) {
+    if (isUniqueSlugError(err)) return { ok: false, message: "That storefront link (slug) is already taken." };
+    throw err;
+  }
 }
 
 export async function deleteProject(id: string): Promise<ProjectActionResult> {
