@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, Trash2 } from "lucide-react";
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { priceForQuantity } from "@/lib/pricing";
+import { deliveryFeeFor } from "@/lib/delivery";
 import { formatAmount } from "@/lib/format";
 import {
   CURRENCY,
@@ -92,6 +93,11 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
   );
   const subtotal = useMemo(() => Number(cart.reduce((s, x) => s + x.line, 0).toFixed(3)), [cart]);
   const count = cart.reduce((s, x) => s + x.q, 0);
+  const deliveryFee = useMemo(
+    () => (cart.length ? deliveryFeeFor(form.governorate, form.area) : 0),
+    [cart.length, form.governorate, form.area],
+  );
+  const grandTotal = useMemo(() => Number((subtotal + deliveryFee).toFixed(3)), [subtotal, deliveryFee]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -257,10 +263,10 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
 
               <div className="mt-2 space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
                 <div className="flex justify-between font-semibold">
-                  <span>Total</span>
+                  <span>Subtotal</span>
                   <span>{formatAmount(subtotal)} {CURRENCY}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Delivery fee (if any) is confirmed with you by phone.</p>
+                <p className="text-xs text-muted-foreground">Delivery fee is added at checkout based on your area.</p>
               </div>
 
               <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
@@ -347,15 +353,23 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
                 <span>{formatAmount(line)}</span>
               </div>
             ))}
-            <div className="flex justify-between border-t pt-1 font-semibold">
-              <span>Total</span>
+            <div className="flex justify-between border-t pt-1">
+              <span className="text-muted-foreground">Subtotal</span>
               <span>{formatAmount(subtotal)} {CURRENCY}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Delivery{form.area ? "" : " (select area)"}</span>
+              <span>{formatAmount(deliveryFee)} {CURRENCY}</span>
+            </div>
+            <div className="flex justify-between border-t pt-1 text-base font-bold">
+              <span>Total</span>
+              <span>{formatAmount(grandTotal)} {CURRENCY}</span>
             </div>
           </section>
 
           <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
             <Button type="submit" className="h-12 w-full text-base" disabled={loading || cart.length === 0}>
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><ShoppingBag className="h-5 w-5" /> Place Order · {formatAmount(subtotal)} {CURRENCY}</>}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><ShoppingBag className="h-5 w-5" /> Place Order · {formatAmount(grandTotal)} {CURRENCY}</>}
             </Button>
           </div>
         </form>

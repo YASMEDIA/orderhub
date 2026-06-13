@@ -16,6 +16,7 @@ import {
 import { formatAmount } from "@/lib/format";
 import { CURRENCY } from "@/lib/constants";
 import { priceForQuantity } from "@/lib/pricing";
+import { deliveryFeeFor, DEFAULT_DELIVERY_FEE } from "@/lib/delivery";
 import { createOrder, updateOrder } from "@/app/actions/orders";
 import { useToast } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,7 +64,7 @@ export function OrderForm({
       housingType: "HOUSE",
       orderDate: new Date().toISOString().slice(0, 10),
       deliveryDate: new Date().toISOString().slice(0, 10),
-      deliveryFee: 0,
+      deliveryFee: DEFAULT_DELIVERY_FEE,
       items: [{ productId: "", productName: "", quantity: 1, unitPrice: 0 }],
       ...defaultValues,
     },
@@ -188,8 +189,10 @@ export function OrderForm({
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               {...register("governorate")}
               onChange={(e) => {
-                setValue("governorate", e.target.value as OrderInput["governorate"]);
+                const g = e.target.value as OrderInput["governorate"];
+                setValue("governorate", g);
                 setValue("area", ""); // reset dependent area
+                setValue("deliveryFee", deliveryFeeFor(g, "")); // auto delivery fee
               }}
             >
               {GOVERNORATES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -197,7 +200,14 @@ export function OrderForm({
           </div>
           <div className="space-y-2">
             <Label>Area</Label>
-            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" {...register("area")}>
+            <select
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              {...register("area")}
+              onChange={(e) => {
+                setValue("area", e.target.value);
+                setValue("deliveryFee", deliveryFeeFor(governorate, e.target.value)); // auto delivery fee
+              }}
+            >
               <option value="">Select area…</option>
               {areas.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
@@ -316,7 +326,7 @@ export function OrderForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Delivery Fee ({CURRENCY}) — 0 means Free</Label>
+              <Label>Delivery Fee ({CURRENCY}) — auto by area, editable (0 = Free)</Label>
               <Input type="number" step="0.001" min={0} {...register("deliveryFee")} />
             </div>
           </div>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { publicOrderSchema } from "@/lib/validations";
 import { nextOrderNumber } from "@/lib/order-number";
 import { priceForQuantity } from "@/lib/pricing";
+import { deliveryFeeFor } from "@/lib/delivery";
 import { logActivity } from "@/lib/activity";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -62,6 +63,8 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
   }
 
   const subtotal = round3(lineItems.reduce((s, it) => s + it.lineTotal, 0));
+  const deliveryFee = deliveryFeeFor(data.governorate, data.area);
+  const grandTotal = round3(subtotal + deliveryFee);
   const year = new Date().getFullYear();
 
   try {
@@ -87,9 +90,9 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
           floor: data.floor,
           apartmentNumber: data.apartmentNumber,
           locationUrl: data.locationUrl ?? "",
-          deliveryFee: 0,
+          deliveryFee,
           subtotal,
-          grandTotal: subtotal,
+          grandTotal,
           status: "PENDING",
           projectId: project.id,
           createdById: null, // online order — no internal creator
