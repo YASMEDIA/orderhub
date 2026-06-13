@@ -8,7 +8,9 @@ import { logActivity } from "@/lib/activity";
 
 export type StoreActionResult = { ok: boolean; message: string };
 
-// Accept an https URL, an uploaded image as a base64 data URL (≤ ~500KB), or empty.
+// Accept an https URL, an uploaded image as a base64 data URL, or empty.
+// The client caps uploads at 500KB of raw bytes; base64 inflates that by ~1.37x,
+// so a ~684K-char data URL is the real ceiling — 700_000 leaves a little slack.
 function isValidLogo(value: string): boolean {
   if (value === "") return true;
   if (/^https:\/\//i.test(value)) return value.length <= 2000;

@@ -14,15 +14,6 @@ export const projectSchema = z.object({
   instagram: optionalUrl,
   tiktok: optionalUrl,
   status: z.enum(["ACTIVE", "INACTIVE"]),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and hyphens only")
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  logoUrl: optionalUrl,
-  storeEnabled: z.coerce.boolean().default(false),
 });
 export type ProjectInput = z.infer<typeof projectSchema>;
 
