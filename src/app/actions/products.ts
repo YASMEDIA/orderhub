@@ -24,6 +24,7 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
     const product = await prisma.product.create({
       data: {
         name: data.name,
+        description: data.description ?? null,
         projectId: data.projectId,
         basePrice: data.basePrice,
         isActive: data.isActive,
@@ -58,6 +59,7 @@ export async function updateProduct(id: string, input: unknown): Promise<Product
         where: { id },
         data: {
           name: data.name,
+          description: data.description ?? null,
           projectId: data.projectId,
           basePrice: data.basePrice,
           isActive: data.isActive,

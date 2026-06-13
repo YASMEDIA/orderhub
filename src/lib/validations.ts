@@ -85,12 +85,33 @@ export const productTierSchema = z.object({
 
 export const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required"),
+  description: z
+    .string()
+    .trim()
+    .max(300, "Description must be 300 characters or less")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   projectId: z.string().min(1, "Project is required"),
   basePrice: z.coerce.number().min(0, "Cannot be negative"),
   isActive: z.coerce.boolean().default(true),
   tiers: z.array(productTierSchema).default([]),
 });
 export type ProductInput = z.infer<typeof productSchema>;
+
+// Storefront settings managed from the dashboard Store page.
+// logoUrl accepts an https URL or an uploaded image as a data URL (validated server-side).
+export const storeSettingsSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9-]*$/, "Use lowercase letters, numbers and hyphens only")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  storeEnabled: z.coerce.boolean().default(false),
+  logoUrl: z.string().trim().default(""),
+});
+export type StoreSettingsInput = z.infer<typeof storeSettingsSchema>;
 
 export const orderSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
