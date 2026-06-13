@@ -32,6 +32,7 @@ export default async function ProductsPage() {
           products={products.map((p) => ({
             id: p.id,
             name: p.name,
+            description: p.description,
             basePrice: p.basePrice,
             isActive: p.isActive,
             projectId: p.projectId,

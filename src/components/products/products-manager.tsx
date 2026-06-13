@@ -19,6 +19,7 @@ type Tier = { minQuantity: number | string; unitPrice: number | string };
 type ProductRow = {
   id: string;
   name: string;
+  description?: string | null;
   basePrice: number;
   isActive: boolean;
   projectId: string;
@@ -39,6 +40,7 @@ export function ProductsManager({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
   const [basePrice, setBasePrice] = useState<string>("0");
   const [isActive, setIsActive] = useState(true);
@@ -54,6 +56,7 @@ export function ProductsManager({
   function openCreate() {
     setEditing(null);
     setName("");
+    setDescription("");
     setProjectId(projects[0]?.id ?? "");
     setBasePrice("0");
     setIsActive(true);
@@ -63,6 +66,7 @@ export function ProductsManager({
   function openEdit(p: ProductRow) {
     setEditing(p);
     setName(p.name);
+    setDescription(p.description ?? "");
     setProjectId(p.projectId);
     setBasePrice(String(p.basePrice));
     setIsActive(p.isActive);
@@ -74,6 +78,7 @@ export function ProductsManager({
     e.preventDefault();
     const payload = {
       name,
+      description,
       projectId,
       basePrice,
       isActive,
@@ -164,6 +169,10 @@ export function ProductsManager({
             <div className="space-y-2">
               <Label>Product Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Husseini Turbah" />
+            </div>
+            <div className="space-y-2">
+              <Label>Description (shown in the store, optional)</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} placeholder="Short description customers will see" />
             </div>
             <div className="space-y-2">
               <Label>Project</Label>

@@ -94,8 +94,9 @@ model Project {
 // A catalog product belonging to a single project, with quantity-based
 // tiered pricing (the more you buy, the lower the unit price).
 model Product {
-  id         String        @id @default(cuid())
-  name       String
+  id          String        @id @default(cuid())
+  name        String
+  description String?       // shown on the public storefront
   basePrice  Float         @default(0) // unit price for quantity >= 1
   isActive   Boolean       @default(true)
   project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)

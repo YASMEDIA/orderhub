@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Loader2, ShoppingBag, MapPin } from "lucide-react";
+import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, Trash2 } from "lucide-react";
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { priceForQuantity } from "@/lib/pricing";
 import { formatAmount } from "@/lib/format";
@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/toast";
 type Product = {
   id: string;
   name: string;
+  description?: string | null;
   basePrice: number;
   tiers: { minQuantity: number; unitPrice: number }[];
 };
@@ -30,6 +31,8 @@ type ProjectInfo = {
   logoUrl?: string | null;
   phone?: string | null;
 };
+
+type Step = "products" | "cart" | "checkout";
 
 type FormState = {
   customerName: string;
@@ -49,6 +52,7 @@ type FormState = {
 export function Storefront({ project, products }: { project: ProjectInfo; products: Product[] }) {
   const router = useRouter();
   const { toast } = useToast();
+  const [step, setStep] = useState<Step>("products");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<FormState>({
@@ -65,6 +69,10 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
     locationUrl: "",
     paymentMethod: "CASH",
   });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
 
   const set = (k: keyof FormState, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const setQuantity = (id: string, q: number) => setQty((p) => ({ ...p, [id]: Math.max(0, q) }));
@@ -87,7 +95,7 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (cart.length === 0) {
-      toast({ title: "Your cart is empty", description: "Add a product to continue.", variant: "destructive" });
+      setStep("products");
       return;
     }
     setLoading(true);
@@ -105,26 +113,47 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
 
   const selectCls = "h-11 w-full rounded-md border border-input bg-background px-3 text-sm";
 
+  const stepTitle: Record<Step, string> = {
+    products: "Products",
+    cart: "Your Cart",
+    checkout: "Checkout",
+  };
+
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background pb-28">
       {/* Header */}
-      <header className="flex flex-col items-center gap-3 border-b px-6 py-8 text-center">
-        {project.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={project.logoUrl} alt={project.name} className="h-20 w-20 rounded-full border object-cover" />
-        ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border bg-muted text-2xl font-bold text-muted-foreground">
-            {project.name.slice(0, 2).toUpperCase()}
+      {step === "products" ? (
+        <header className="flex flex-col items-center gap-3 border-b px-6 py-8 text-center">
+          {project.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={project.logoUrl} alt={project.name} className="h-20 w-20 rounded-full border object-cover" />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border bg-muted text-2xl font-bold text-muted-foreground">
+              {project.name.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+          {project.phone ? <p className="text-sm text-muted-foreground">{project.phone}</p> : null}
+        </header>
+      ) : (
+        <header className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/95 px-3 py-3 backdrop-blur">
+          <Button
+            type="button" variant="ghost" size="icon"
+            onClick={() => setStep(step === "checkout" ? "cart" : "products")}
+            aria-label="Back"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <p className="font-semibold leading-tight">{stepTitle[step]}</p>
+            <p className="text-xs text-muted-foreground">{project.name}</p>
           </div>
-        )}
-        <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
-        {project.phone ? <p className="text-sm text-muted-foreground">{project.phone}</p> : null}
-      </header>
+        </header>
+      )}
 
-      <form onSubmit={submit} className="space-y-6 px-4 py-6">
-        {/* Products */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Products</h2>
+      {/* STEP 1 — PRODUCTS */}
+      {step === "products" && (
+        <div className="space-y-3 px-4 py-6">
           {products.length === 0 ? (
             <p className="text-sm text-muted-foreground">No products available right now.</p>
           ) : (
@@ -135,15 +164,20 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
                 <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                   <div className="min-w-0">
                     <p className="font-medium">{p.name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    {p.description ? (
+                      <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                    ) : null}
+                    <p className="mt-0.5 text-sm font-semibold">
                       {formatAmount(q > 0 ? unit : p.basePrice)} {CURRENCY}
-                      {p.tiers.length > 0 ? (
-                        <span className="ml-1 text-xs">· {p.tiers.map((t) => `${t.minQuantity}+ ${formatAmount(t.unitPrice)}`).join(" · ")}</span>
-                      ) : null}
                     </p>
+                    {p.tiers.length > 0 ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")}
+                      </p>
+                    ) : null}
                   </div>
                   {q > 0 ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -153,93 +187,168 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
                       </Button>
                     </div>
                   ) : (
-                    <Button type="button" variant="secondary" onClick={() => setQuantity(p.id, 1)}>
-                      Add
+                    <Button type="button" variant="secondary" className="shrink-0" onClick={() => setQuantity(p.id, 1)}>
+                      <Plus className="h-4 w-4" /> Add
                     </Button>
                   )}
                 </div>
               );
             })
           )}
-        </section>
 
-        {/* Customer */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Your details</h2>
-          <div className="space-y-2">
-            <Label>Full Name</Label>
-            <Input className="h-11" value={form.customerName} onChange={(e) => set("customerName", e.target.value)} required />
+          {/* Sticky: view cart */}
+          <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
+            <Button type="button" className="h-12 w-full text-base" disabled={count === 0} onClick={() => setStep("cart")}>
+              <ShoppingCart className="h-5 w-5" />
+              View Cart{count > 0 ? ` (${count}) · ${formatAmount(subtotal)} ${CURRENCY}` : ""}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label>Phone Number</Label>
-            <Input className="h-11" type="tel" value={form.customerPhone} onChange={(e) => set("customerPhone", e.target.value)} placeholder="+965 ..." required />
-          </div>
-        </section>
+        </div>
+      )}
 
-        {/* Address */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Delivery address</h2>
-          <div className="space-y-2">
-            <Label>Governorate</Label>
-            <select className={selectCls} value={form.governorate} onChange={(e) => { set("governorate", e.target.value); set("area", ""); }}>
-              {GOVERNORATES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>Area</Label>
-            <select className={selectCls} value={form.area} onChange={(e) => set("area", e.target.value)} required>
-              <option value="">Select area…</option>
-              {areas.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2"><Label>Block</Label><Input className="h-11" value={form.block} onChange={(e) => set("block", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Street</Label><Input className="h-11" value={form.street} onChange={(e) => set("street", e.target.value)} required /></div>
+      {/* STEP 2 — CART */}
+      {step === "cart" && (
+        <div className="space-y-3 px-4 py-6">
+          {cart.length === 0 ? (
+            <div className="space-y-3 py-10 text-center">
+              <p className="text-sm text-muted-foreground">Your cart is empty.</p>
+              <Button type="button" variant="outline" onClick={() => setStep("products")}>Browse products</Button>
+            </div>
+          ) : (
+            <>
+              {cart.map(({ p, q, unit, line }) => (
+                <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
+                    <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {q === 1 ? (
+                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, 0)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    ) : (
+                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <span className="w-6 text-center font-semibold">{q}</span>
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q + 1)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setStep("products")} className="text-sm text-primary hover:underline">
+                + Add more products
+              </button>
+
+              <div className="mt-2 space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>{formatAmount(subtotal)} {CURRENCY}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Delivery fee (if any) is confirmed with you by phone.</p>
+              </div>
+
+              <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
+                <Button type="button" className="h-12 w-full text-base" onClick={() => setStep("checkout")}>
+                  Checkout · {formatAmount(subtotal)} {CURRENCY}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* STEP 3 — CHECKOUT */}
+      {step === "checkout" && (
+        <form onSubmit={submit} className="space-y-6 px-4 py-6">
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Your details</h2>
             <div className="space-y-2">
-              <Label>Housing</Label>
-              <select className={selectCls} value={form.housingType} onChange={(e) => set("housingType", e.target.value)}>
-                {HOUSING_TYPES.map((h) => <option key={h.value} value={h.value}>{h.label}</option>)}
+              <Label>Full Name</Label>
+              <Input className="h-11" value={form.customerName} onChange={(e) => set("customerName", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone Number</Label>
+              <Input className="h-11" type="tel" value={form.customerPhone} onChange={(e) => set("customerPhone", e.target.value)} placeholder="+965 ..." required />
+              <p className="text-xs text-muted-foreground">We&apos;ll contact you on this number to confirm your order.</p>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Delivery address</h2>
+            <div className="space-y-2">
+              <Label>Governorate</Label>
+              <select className={selectCls} value={form.governorate} onChange={(e) => { set("governorate", e.target.value); set("area", ""); }}>
+                {GOVERNORATES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
               </select>
             </div>
-            <div className="space-y-2"><Label>Building No.</Label><Input className="h-11" value={form.buildingNumber} onChange={(e) => set("buildingNumber", e.target.value)} required /></div>
-            <div className="space-y-2"><Label>Floor (opt.)</Label><Input className="h-11" value={form.floor} onChange={(e) => set("floor", e.target.value)} /></div>
-            <div className="space-y-2"><Label>Apartment (opt.)</Label><Input className="h-11" value={form.apartmentNumber} onChange={(e) => set("apartmentNumber", e.target.value)} /></div>
-          </div>
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> Location pin (optional)</Label>
-            <Input className="h-11" value={form.locationUrl} onChange={(e) => set("locationUrl", e.target.value)} placeholder="Paste your Google Maps location link" />
-          </div>
-        </section>
+            <div className="space-y-2">
+              <Label>Area</Label>
+              <select className={selectCls} value={form.area} onChange={(e) => set("area", e.target.value)} required>
+                <option value="">Select area…</option>
+                {areas.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>Block</Label><Input className="h-11" value={form.block} onChange={(e) => set("block", e.target.value)} required /></div>
+              <div className="space-y-2"><Label>Street</Label><Input className="h-11" value={form.street} onChange={(e) => set("street", e.target.value)} required /></div>
+              <div className="space-y-2">
+                <Label>Housing</Label>
+                <select className={selectCls} value={form.housingType} onChange={(e) => set("housingType", e.target.value)}>
+                  {HOUSING_TYPES.map((h) => <option key={h.value} value={h.value}>{h.label}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2"><Label>Building No.</Label><Input className="h-11" value={form.buildingNumber} onChange={(e) => set("buildingNumber", e.target.value)} required /></div>
+              <div className="space-y-2"><Label>Floor (opt.)</Label><Input className="h-11" value={form.floor} onChange={(e) => set("floor", e.target.value)} /></div>
+              <div className="space-y-2"><Label>Apartment (opt.)</Label><Input className="h-11" value={form.apartmentNumber} onChange={(e) => set("apartmentNumber", e.target.value)} /></div>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> Location pin (optional)</Label>
+              <Input className="h-11" value={form.locationUrl} onChange={(e) => set("locationUrl", e.target.value)} placeholder="Paste your Google Maps location link" />
+            </div>
+          </section>
 
-        {/* Payment */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Payment</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {PAYMENT_METHODS.map((m) => (
-              <button
-                type="button"
-                key={m.value}
-                onClick={() => set("paymentMethod", m.value)}
-                className={`rounded-lg border p-3 text-sm font-medium ${form.paymentMethod === m.value ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-              >
-                {m.label}
-              </button>
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Payment</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  type="button"
+                  key={m.value}
+                  onClick={() => set("paymentMethod", m.value)}
+                  className={`rounded-lg border p-3 text-sm font-medium ${form.paymentMethod === m.value ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Order summary */}
+          <section className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
+            {cart.map(({ p, q, line }) => (
+              <div key={p.id} className="flex justify-between">
+                <span className="text-muted-foreground">{q} × {p.name}</span>
+                <span>{formatAmount(line)}</span>
+              </div>
             ))}
-          </div>
-          <p className="text-xs text-muted-foreground">We&apos;ll contact you on your phone number to confirm.</p>
-        </section>
+            <div className="flex justify-between border-t pt-1 font-semibold">
+              <span>Total</span>
+              <span>{formatAmount(subtotal)} {CURRENCY}</span>
+            </div>
+          </section>
 
-        {/* Cart summary + submit (sticky) */}
-        <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{count} item{count === 1 ? "" : "s"}</span>
-            <span className="text-lg font-bold">{formatAmount(subtotal)} {CURRENCY}</span>
+          <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
+            <Button type="submit" className="h-12 w-full text-base" disabled={loading || cart.length === 0}>
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><ShoppingBag className="h-5 w-5" /> Place Order · {formatAmount(subtotal)} {CURRENCY}</>}
+            </Button>
           </div>
-          <Button type="submit" className="h-12 w-full text-base" disabled={loading || cart.length === 0}>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><ShoppingBag className="h-5 w-5" /> Place Order</>}
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
     </div>
   );
 }

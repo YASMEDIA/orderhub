@@ -110,23 +110,7 @@ export function ProjectsManager({ projects }: { projects: (Project & { _count: {
                 <option value="INACTIVE">Inactive</option>
               </select>
             </div>
-
-            <div className="rounded-md border p-3 space-y-3">
-              <p className="text-sm font-semibold">Online Store</p>
-              <div className="space-y-2">
-                <Label>Store Link (slug)</Label>
-                <Input name="slug" defaultValue={editing?.slug ?? ""} placeholder="e.g. 313-boutique" />
-                <p className="text-xs text-muted-foreground">Public page: /store/&lt;slug&gt; — lowercase letters, numbers and hyphens.</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Logo URL (optional)</Label>
-                <Input name="logoUrl" type="url" defaultValue={editing?.logoUrl ?? ""} placeholder="https://...logo.png" />
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="storeEnabled" defaultChecked={editing?.storeEnabled ?? false} />
-                Enable public storefront
-              </label>
-            </div>
+            <p className="text-xs text-muted-foreground">Storefront (logo, link, products) is managed in the <span className="font-medium">Store</span> page.</p>
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
