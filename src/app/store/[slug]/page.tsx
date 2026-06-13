@@ -32,6 +32,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         id: p.id,
         name: p.name,
         description: p.description,
+        images: p.images,
         basePrice: p.basePrice,
         tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
       }))}

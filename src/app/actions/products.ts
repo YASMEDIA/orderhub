@@ -13,6 +13,19 @@ function sortTiers(tiers: { minQuantity: number; unitPrice: number }[]) {
   return [...tiers].sort((a, b) => a.minQuantity - b.minQuantity);
 }
 
+// Keep only valid images: an https URL, or a base64 image data URL within size.
+// Returns undefined when input is undefined (so updates can skip the field).
+function sanitizeImages(images: string[] | undefined): string[] | undefined {
+  if (images === undefined) return undefined;
+  return images
+    .filter((v) =>
+      /^https:\/\//i.test(v)
+        ? v.length <= 2000
+        : /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= 700_000,
+    )
+    .slice(0, 4);
+}
+
 export async function createProduct(input: unknown): Promise<ProductActionResult> {
   try {
     const user = await requireRole("SUPER_ADMIN", "ADMIN");
@@ -25,6 +38,7 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
       data: {
         name: data.name,
         description: data.description ?? null,
+        images: sanitizeImages(data.images) ?? [],
         projectId: data.projectId,
         basePrice: data.basePrice,
         isActive: data.isActive,
@@ -53,6 +67,7 @@ export async function updateProduct(id: string, input: unknown): Promise<Product
     const data = parsed.data;
     await assertProjectAccess(user, data.projectId);
 
+    const images = sanitizeImages(data.images);
     await prisma.$transaction(async (tx) => {
       await tx.productTier.deleteMany({ where: { productId: id } });
       await tx.product.update({
@@ -64,6 +79,7 @@ export async function updateProduct(id: string, input: unknown): Promise<Product
           basePrice: data.basePrice,
           isActive: data.isActive,
           tiers: { create: sortTiers(data.tiers) },
+          ...(images !== undefined ? { images } : {}), // skip when not provided
         },
       });
     });
