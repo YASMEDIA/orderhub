@@ -211,6 +211,8 @@ export function OrderForm({
                 setValue("deliveryFee", deliveryFeeFor(governorate, v)); // auto delivery fee
               }}
             />
+            {/* Registered so the value is always part of the form payload + validation. */}
+            <input type="hidden" {...register("area")} />
             {err(errors.area?.message)}
           </div>
           <div className="space-y-2">

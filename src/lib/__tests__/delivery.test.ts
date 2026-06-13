@@ -16,7 +16,7 @@ describe("deliveryFeeFor", () => {
   });
 
   it("charges 3 KD only for the listed Ahmadi areas", () => {
-    for (const a of ["Ali Sabah Al-Salem", "Khairan", "Sabah Al-Ahmad", "Sabah Al-Ahmad Sea City", "Wafra", "Zoor"]) {
+    for (const a of ["Ali Sabah Al-Salem", "Khairan", "Sabah Al-Ahmad", "Sabah Al-Ahmad Sea City", "Wafra Residential", "Zoor"]) {
       expect(deliveryFeeFor("AHMADI", a)).toBe(3);
     }
   });
