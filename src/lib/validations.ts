@@ -86,6 +86,9 @@ export const productSchema = z.object({
   basePrice: z.coerce.number().min(0, "Cannot be negative"),
   isActive: z.coerce.boolean().default(true),
   tiers: z.array(productTierSchema).default([]),
+  // Optional (not defaulted): when omitted, the action leaves existing images
+  // untouched, so editing a product elsewhere never wipes its images.
+  images: z.array(z.string()).max(4, "Up to 4 images per product").optional(),
 });
 export type ProductInput = z.infer<typeof productSchema>;
 

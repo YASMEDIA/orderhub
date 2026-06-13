@@ -97,6 +97,7 @@ model Product {
   id          String        @id @default(cuid())
   name        String
   description String?       // shown on the public storefront
+  images      String[]      @default([]) // up to 4 product images (data URLs or https)
   basePrice  Float         @default(0) // unit price for quantity >= 1
   isActive   Boolean       @default(true)
   project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Copy, ExternalLink, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Copy, ExternalLink, Upload, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ type ProductRow = {
   id: string;
   name: string;
   description: string | null;
+  images: string[];
   basePrice: number;
   isActive: boolean;
   projectId: string;
@@ -167,18 +168,34 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [basePrice, setBasePrice] = useState("0");
   const [isActive, setIsActive] = useState(true);
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [pending, startTransition] = useTransition();
 
   function openCreate() {
-    setEditing(null); setName(""); setDescription(""); setBasePrice("0"); setIsActive(true); setTiers([]); setOpen(true);
+    setEditing(null); setName(""); setDescription(""); setImages([]); setBasePrice("0"); setIsActive(true); setTiers([]); setOpen(true);
   }
   function openEdit(p: ProductRow) {
-    setEditing(p); setName(p.name); setDescription(p.description ?? ""); setBasePrice(String(p.basePrice)); setIsActive(p.isActive);
+    setEditing(p); setName(p.name); setDescription(p.description ?? ""); setImages(p.images ?? []); setBasePrice(String(p.basePrice)); setIsActive(p.isActive);
     setTiers(p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })));
     setOpen(true);
+  }
+
+  function onImagesFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    const room = 4 - images.length;
+    files.slice(0, room).forEach((file) => {
+      if (file.size > 500_000) {
+        toast({ title: "Image too large", description: `${file.name} is over 500KB.`, variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setImages((prev) => (prev.length < 4 ? [...prev, String(reader.result)] : prev));
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -186,6 +203,7 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
     const payload = {
       name,
       description,
+      images,
       projectId,
       basePrice,
       isActive,
@@ -236,8 +254,16 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
               products.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <p className="font-medium">{p.name}</p>
-                    {p.description ? <p className="max-w-[260px] truncate text-xs text-muted-foreground">{p.description}</p> : null}
+                    <div className="flex items-center gap-3">
+                      {p.images?.[0] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.images[0]} alt="" className="h-10 w-10 shrink-0 rounded border object-cover" />
+                      ) : null}
+                      <div className="min-w-0">
+                        <p className="font-medium">{p.name}{p.images?.length > 1 ? <span className="ml-1 text-xs text-muted-foreground">+{p.images.length - 1}</span> : null}</p>
+                        {p.description ? <p className="max-w-[220px] truncate text-xs text-muted-foreground">{p.description}</p> : null}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>{formatAmount(p.basePrice)} {CURRENCY}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -266,6 +292,32 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
             <div className="space-y-2">
               <Label>Description (shown in the store)</Label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} rows={2} placeholder="Short description customers will see" />
+            </div>
+            <div className="space-y-2">
+              <Label>Product Images (up to 4)</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((img, i) => (
+                  <div key={i} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img} alt="" className="h-16 w-full rounded border object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background text-destructive shadow"
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 4 ? (
+                  <label className="flex h-16 cursor-pointer flex-col items-center justify-center rounded border border-dashed text-muted-foreground hover:bg-accent">
+                    <ImagePlus className="h-5 w-5" />
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple className="hidden" onChange={onImagesFile} />
+                  </label>
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">PNG/JPG/WebP, up to 500KB each.</p>
             </div>
             <div className="space-y-2">
               <Label>Base Price ({CURRENCY}) — unit price for quantity 1+</Label>

@@ -37,6 +37,7 @@ export default async function StorePage() {
           id: p.id,
           name: p.name,
           description: p.description,
+          images: p.images,
           basePrice: p.basePrice,
           isActive: p.isActive,
           projectId: p.projectId,

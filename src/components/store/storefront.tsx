@@ -22,6 +22,7 @@ type Product = {
   id: string;
   name: string;
   description?: string | null;
+  images?: string[];
   basePrice: number;
   tiers: { minQuantity: number; unitPrice: number }[];
 };
@@ -161,36 +162,46 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
               const q = qty[p.id] || 0;
               const unit = priceForQuantity(p.basePrice, p.tiers, Math.max(1, q));
               return (
-                <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{p.name}</p>
-                    {p.description ? (
-                      <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-                    ) : null}
-                    <p className="mt-0.5 text-sm font-semibold">
-                      {formatAmount(q > 0 ? unit : p.basePrice)} {CURRENCY}
-                    </p>
-                    {p.tiers.length > 0 ? (
-                      <p className="text-[11px] text-muted-foreground">
-                        {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")}
-                      </p>
-                    ) : null}
-                  </div>
-                  {q > 0 ? (
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-6 text-center font-semibold">{q}</span>
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q + 1)}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                <div key={p.id} className="overflow-hidden rounded-lg border">
+                  {p.images && p.images.length > 0 ? (
+                    <div className="flex snap-x gap-2 overflow-x-auto p-2">
+                      {p.images.map((img, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={img} alt={p.name} className="h-32 w-32 shrink-0 snap-start rounded-md border object-cover" />
+                      ))}
                     </div>
-                  ) : (
-                    <Button type="button" variant="secondary" className="shrink-0" onClick={() => setQuantity(p.id, 1)}>
-                      <Plus className="h-4 w-4" /> Add
-                    </Button>
-                  )}
+                  ) : null}
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{p.name}</p>
+                      {p.description ? (
+                        <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                      ) : null}
+                      <p className="mt-0.5 text-sm font-semibold">
+                        {formatAmount(q > 0 ? unit : p.basePrice)} {CURRENCY}
+                      </p>
+                      {p.tiers.length > 0 ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")}
+                        </p>
+                      ) : null}
+                    </div>
+                    {q > 0 ? (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-6 text-center font-semibold">{q}</span>
+                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q + 1)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button type="button" variant="secondary" className="shrink-0" onClick={() => setQuantity(p.id, 1)}>
+                        <Plus className="h-4 w-4" /> Add
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })
@@ -218,10 +229,16 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
             <>
               {cart.map(({ p, q, unit, line }) => (
                 <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
-                    <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {p.images?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.images[0]} alt={p.name} className="h-12 w-12 shrink-0 rounded border object-cover" />
+                    ) : null}
+                    <div className="min-w-0">
+                      <p className="font-medium">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
+                      <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {q === 1 ? (
