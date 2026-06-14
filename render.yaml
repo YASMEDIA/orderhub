@@ -51,6 +51,6 @@ services:
       - key: SMTP_FROM
         value: Mustafaq81012@gmail.com
       - key: SMTP_PASS
-        sync: false # paste the 16-char Gmail App Password in the Render dashboard
+        value: crxzwlppoypbpuna # Gmail App Password — rotate after go-live
       - key: INVOICE_NOTIFY_EMAIL
         value: Malyaseri9@gmail.com
