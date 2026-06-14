@@ -51,6 +51,6 @@ services:
       - key: SMTP_FROM
         value: Mustafaq81012@gmail.com
       - key: SMTP_PASS
-        value: crxzwlppoypbpuna # Gmail App Password — rotate after go-live
+        value: jwaqiphkljwhbmpq # Gmail App Password
       - key: INVOICE_NOTIFY_EMAIL
         value: Malyaseri9@gmail.com
