@@ -10,6 +10,7 @@ import { logActivity } from "@/lib/activity";
 import { labelFor } from "@/lib/constants";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { computeOrderTotals } from "@/lib/order-totals";
+import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export type OrderActionResult =
   | { ok: true; message: string; orderId?: string; publicId?: string }
@@ -73,6 +74,9 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
     });
     revalidatePath("/dashboard/orders");
     revalidatePath("/dashboard");
+    // Email the invoice to the configured recipient. Awaited so serverless
+    // doesn't reclaim the function before delivery; never throws.
+    await sendOrderInvoiceEmail(order.id);
     return { ok: true, message: "Order created", orderId: order.id, publicId: order.publicId };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
