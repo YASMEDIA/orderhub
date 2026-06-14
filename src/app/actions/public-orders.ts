@@ -8,6 +8,7 @@ import { priceForQuantity } from "@/lib/pricing";
 import { deliveryFeeFor } from "@/lib/delivery";
 import { logActivity } from "@/lib/activity";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendOrderInvoiceEmail } from "@/lib/email";
 
 export type PublicOrderResult =
   | { ok: true; publicId: string; orderNumber: string }
@@ -102,6 +103,8 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     });
 
     await logActivity({ action: "Online Order", detail: order.orderNumber, projectId: project.id });
+    // Email the invoice to the configured recipient; never throws.
+    await sendOrderInvoiceEmail(order.id);
     return { ok: true, publicId: order.publicId, orderNumber: order.orderNumber };
   } catch (err) {
     console.error("placePublicOrder failed", err);
