@@ -25,7 +25,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
   ].filter(Boolean).join(" · ");
 
   return (
-    <div className="min-h-screen bg-muted/40 px-4 py-8">
+    <div className="force-light min-h-screen bg-muted/40 px-4 py-8 text-foreground">
       <div className="mx-auto max-w-md overflow-hidden rounded-2xl border bg-background shadow-sm">
         <div className="border-b bg-primary px-6 py-5 text-primary-foreground">
           <h1 className="text-xl font-bold">{order.project.name}</h1>

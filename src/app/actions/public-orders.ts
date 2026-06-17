@@ -103,8 +103,10 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     });
 
     await logActivity({ action: "Online Order", detail: order.orderNumber, projectId: project.id });
-    // Email the invoice to the configured recipient; never throws.
-    await sendOrderInvoiceEmail(order.id);
+    // Fire-and-forget: don't make the customer wait on SMTP. The order is
+    // already committed; the email sends in the background on this persistent
+    // Node server. (Awaiting Gmail SMTP here was hanging the storefront.)
+    void sendOrderInvoiceEmail(order.id).catch((e) => console.error("invoice email failed", e));
     return { ok: true, publicId: order.publicId, orderNumber: order.orderNumber };
   } catch (err) {
     console.error("placePublicOrder failed", err);

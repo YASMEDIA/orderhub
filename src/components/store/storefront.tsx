@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, Trash2 } from "lucide-react";
+import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, Trash2, CheckCircle2 } from "lucide-react";
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { priceForQuantity } from "@/lib/pricing";
 import { deliveryFeeFor } from "@/lib/delivery";
@@ -53,11 +52,11 @@ type FormState = {
 };
 
 export function Storefront({ project, products }: { project: ProjectInfo; products: Product[] }) {
-  const router = useRouter();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("products");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [placed, setPlaced] = useState<{ orderNumber: string; publicId: string; paymentMethod: string } | null>(null);
   const [form, setForm] = useState<FormState>({
     customerName: "",
     customerPhone: "",
@@ -120,7 +119,14 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
       toast({ title: "Could not place order", description: res.message, variant: "destructive" });
       return;
     }
-    router.push(`/invoice/${res.publicId}`);
+    setPlaced({ orderNumber: res.orderNumber, publicId: res.publicId, paymentMethod: form.paymentMethod });
+  }
+
+  function resetOrder() {
+    setPlaced(null);
+    setQty({});
+    setStep("products");
+    setForm((p) => ({ ...p, area: "", block: "", street: "", buildingNumber: "", floor: "", apartmentNumber: "", locationUrl: "" }));
   }
 
   const selectCls = "h-11 w-full rounded-md border border-input bg-background px-3 text-sm";
@@ -130,6 +136,34 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
     cart: "Your Cart",
     checkout: "Checkout",
   };
+
+  // Order placed — instant confirmation (no redirect, so it never hangs).
+  if (placed) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 bg-background px-6 py-12 text-center">
+        <CheckCircle2 className="h-16 w-16 text-emerald-500" />
+        <h1 className="text-2xl font-bold tracking-tight">Order received</h1>
+        <div>
+          <p className="text-xs text-muted-foreground">Order number</p>
+          <p className="text-lg font-semibold">{placed.orderNumber}</p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {placed.paymentMethod === "ONLINE"
+            ? "Thank you! We will contact you shortly on your phone number to send you the payment link."
+            : "Thank you! We will contact you shortly on your phone number to confirm your order."}
+        </p>
+        <a
+          href={`/invoice/${placed.publicId}`}
+          className="mt-2 inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          View Invoice
+        </a>
+        <button type="button" onClick={resetOrder} className="text-sm text-primary hover:underline">
+          Place another order
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background pb-28">
