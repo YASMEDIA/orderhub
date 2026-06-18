@@ -6,7 +6,7 @@ import { StoreManager } from "@/components/store/store-manager";
 
 export default async function StorePage() {
   const user = await requireUser();
-  if (user.role === "EMPLOYEE") redirect("/dashboard");
+  if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") redirect("/dashboard");
 
   const [projects, products] = await Promise.all([
     getAccessibleProjects(),

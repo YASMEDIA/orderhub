@@ -6,7 +6,7 @@ import { ProductsManager } from "@/components/products/products-manager";
 
 export default async function ProductsPage() {
   const user = await requireUser();
-  if (user.role === "EMPLOYEE") redirect("/dashboard");
+  if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") redirect("/dashboard");
 
   const [products, projects] = await Promise.all([
     prisma.product.findMany({

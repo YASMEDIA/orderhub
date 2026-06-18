@@ -14,6 +14,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const order = await prisma.order.findUnique({ where: { id } });
   if (!order) return new NextResponse("Not found", { status: 404 });
+  if (user.role === "DRIVER") return new NextResponse("Forbidden", { status: 403 }); // drivers: status only
   if (!canAccessProject(user, order.projectId)) return new NextResponse("Forbidden", { status: 403 });
 
   const png = await qrWithLabelPng(order.publicId, order.orderNumber);

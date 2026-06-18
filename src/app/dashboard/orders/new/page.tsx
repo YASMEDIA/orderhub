@@ -1,8 +1,12 @@
+import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/rbac";
 import { getAccessibleProjects } from "@/app/actions/projects";
 import { getAccessibleProducts } from "@/app/actions/products";
 import { OrderForm } from "@/components/orders/order-form";
 
 export default async function NewOrderPage() {
+  const user = await requireUser();
+  if (user.role === "DRIVER") redirect("/dashboard/orders"); // drivers can't create orders
   const [projects, products] = await Promise.all([getAccessibleProjects(), getAccessibleProducts()]);
 
   return (

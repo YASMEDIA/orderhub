@@ -32,6 +32,14 @@ export default async function OrdersPage({
   if (sp.project) where.projectId = sp.project;
   if (sp.status) where.status = sp.status as Prisma.OrderWhereInput["status"];
   if (sp.creator) where.createdById = sp.creator;
+  // Drivers only see active orders; delivered/cancelled disappear from their list.
+  if (user.role === "DRIVER") {
+    const terminal = ["DELIVERED", "CANCELLED"];
+    where.status =
+      sp.status && !terminal.includes(sp.status)
+        ? (sp.status as Prisma.OrderWhereInput["status"])
+        : { notIn: terminal as never };
+  }
   if (sp.from || sp.to) {
     where.orderDate = {};
     if (sp.from) (where.orderDate as Prisma.DateTimeFilter).gte = new Date(sp.from);
@@ -60,9 +68,13 @@ export default async function OrdersPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">{total} order{total === 1 ? "" : "s"} found.</p>
+          <p className="text-sm text-muted-foreground">
+            {total} {user.role === "DRIVER" ? "active " : ""}order{total === 1 ? "" : "s"} found.
+          </p>
         </div>
-        <Button asChild><Link href="/dashboard/orders/new"><Plus className="h-4 w-4" /> New Order</Link></Button>
+        {user.role !== "DRIVER" ? (
+          <Button asChild><Link href="/dashboard/orders/new"><Plus className="h-4 w-4" /> New Order</Link></Button>
+        ) : null}
       </div>
 
       <OrderFilters

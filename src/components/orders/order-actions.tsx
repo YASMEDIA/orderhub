@@ -32,6 +32,8 @@ export function OrderRowActions({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const canManage = role === "SUPER_ADMIN" || role === "ADMIN";
+  const canChangeStatus = canManage || role === "DRIVER";
+  const isDriver = role === "DRIVER"; // drivers: view + change status only
 
   function changeStatus(next: OrderStatus) {
     const fd = new FormData();
@@ -67,18 +69,22 @@ export function OrderRowActions({
               <Pencil className="h-4 w-4" /> Edit
             </DropdownMenuItem>
           )}
-          {canManage && (
+          {canChangeStatus && (
             <DropdownMenuItem onClick={() => setStatusOpen(true)}>
               <RefreshCw className="h-4 w-4" /> Change Status
             </DropdownMenuItem>
           )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <a href={`/api/orders/${orderId}/pdf`}><FileDown className="h-4 w-4" /> Download PDF</a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a href={`/api/orders/${orderId}/qr`}><QrCode className="h-4 w-4" /> Download QR</a>
-          </DropdownMenuItem>
+          {!isDriver && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <a href={`/api/orders/${orderId}/pdf`}><FileDown className="h-4 w-4" /> Download PDF</a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`/api/orders/${orderId}/qr`}><QrCode className="h-4 w-4" /> Download QR</a>
+              </DropdownMenuItem>
+            </>
+          )}
           {canManage && (
             <>
               <DropdownMenuSeparator />
