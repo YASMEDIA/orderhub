@@ -8,7 +8,7 @@ import { OrderForm } from "@/components/orders/order-form";
 export default async function EditOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser();
-  if (user.role === "EMPLOYEE") redirect(`/dashboard/orders/${id}`);
+  if (user.role === "EMPLOYEE" || user.role === "DRIVER") redirect(`/dashboard/orders/${id}`);
 
   const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
   if (!order) notFound();

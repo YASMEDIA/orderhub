@@ -146,7 +146,7 @@ export async function updateOrder(id: string, input: unknown): Promise<OrderActi
 
 export async function updateOrderStatus(formData: FormData): Promise<OrderActionResult> {
   try {
-    const user = await requireRole("SUPER_ADMIN", "ADMIN");
+    const user = await requireRole("SUPER_ADMIN", "ADMIN", "DRIVER");
     const parsed = statusSchema.safeParse({ id: formData.get("id"), status: formData.get("status") });
     if (!parsed.success) return { ok: false, message: "Invalid status" };
 

@@ -44,8 +44,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="text-sm text-muted-foreground">{order.project.name} · created by {order.createdBy?.fullName ?? "Online Store"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline"><a href={`/api/orders/${order.id}/pdf`}><FileDown className="h-4 w-4" /> Download Receipt PDF</a></Button>
-          <Button asChild variant="outline"><a href={`/api/orders/${order.id}/qr`}><QrCode className="h-4 w-4" /> Download QR Code</a></Button>
+          {user.role !== "DRIVER" ? (
+            <>
+              <Button asChild variant="outline"><a href={`/api/orders/${order.id}/pdf`}><FileDown className="h-4 w-4" /> Download Receipt PDF</a></Button>
+              <Button asChild variant="outline"><a href={`/api/orders/${order.id}/qr`}><QrCode className="h-4 w-4" /> Download QR Code</a></Button>
+            </>
+          ) : null}
           <OrderRowActions orderId={order.id} status={order.status} role={user.role} />
         </div>
       </div>

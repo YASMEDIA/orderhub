@@ -14,7 +14,7 @@ export default async function ReportsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireUser();
-  if (user.role === "EMPLOYEE") redirect("/dashboard");
+  if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") redirect("/dashboard");
 
   const sp = await searchParams;
   const period = (sp.period ?? "monthly") as ReportPeriod;

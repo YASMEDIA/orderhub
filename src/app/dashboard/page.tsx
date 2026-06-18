@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ShoppingCart, Clock, PackageCheck, Truck, Wallet } from "lucide-react";
 import { requireUser } from "@/lib/rbac";
 import { getDashboardData } from "@/lib/stats";
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  if (user.role === "DRIVER") redirect("/dashboard/orders"); // drivers only see orders
   const data = await getDashboardData(user);
 
   return (

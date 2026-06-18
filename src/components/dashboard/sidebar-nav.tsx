@@ -22,7 +22,7 @@ type Item = { href: string; label: string; icon: React.ElementType; roles: Role[
 const ITEMS: Item[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["SUPER_ADMIN", "ADMIN", "EMPLOYEE"] },
   { href: "/dashboard/orders/new", label: "New Order", icon: PlusCircle, roles: ["SUPER_ADMIN", "ADMIN", "EMPLOYEE"] },
-  { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart, roles: ["SUPER_ADMIN", "ADMIN", "EMPLOYEE"] },
+  { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart, roles: ["SUPER_ADMIN", "ADMIN", "EMPLOYEE", "DRIVER"] },
   { href: "/dashboard/projects", label: "Projects", icon: FolderKanban, roles: ["SUPER_ADMIN"] },
   { href: "/dashboard/store", label: "Store", icon: Store, roles: ["SUPER_ADMIN", "ADMIN"] },
   { href: "/dashboard/products", label: "Products", icon: Package, roles: ["SUPER_ADMIN", "ADMIN"] },

@@ -40,6 +40,7 @@ export const ROLES = [
   { value: "SUPER_ADMIN", label: "Super Admin" },
   { value: "ADMIN", label: "Admin" },
   { value: "EMPLOYEE", label: "Employee" },
+  { value: "DRIVER", label: "Driver" },
 ] as const;
 
 export const GOVERNORATES = [
