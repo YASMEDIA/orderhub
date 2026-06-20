@@ -74,9 +74,10 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
     });
     revalidatePath("/dashboard/orders");
     revalidatePath("/dashboard");
-    // Email the invoice to the configured recipient. Awaited so serverless
-    // doesn't reclaim the function before delivery; never throws.
-    await sendOrderInvoiceEmail(order.id);
+    // Fire-and-forget: don't make the dashboard wait on SMTP. The order is
+    // already committed; the email sends in the background on this persistent
+    // Node server. (Awaiting Gmail SMTP here was hanging New Order.)
+    void sendOrderInvoiceEmail(order.id).catch((e) => console.error("invoice email failed", e));
     return { ok: true, message: "Order created", orderId: order.id, publicId: order.publicId };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
