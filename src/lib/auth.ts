@@ -2,6 +2,7 @@ import { getServerSession, type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { nextAuthSecret } from "./auth-secret";
 import type { Role } from "@prisma/client";
 
 declare module "next-auth" {
@@ -30,6 +31,7 @@ declare module "next-auth/jwt" {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: nextAuthSecret,
   session: { strategy: "jwt", maxAge: 60 * 60 * 8 }, // 8h secure sessions
   pages: { signIn: "/login" },
   providers: [
