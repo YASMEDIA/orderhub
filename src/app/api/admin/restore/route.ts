@@ -4,7 +4,7 @@ import { requireRole, AuthError } from "@/lib/rbac";
 
 // Super-Admin-only RESTORE. Replaces ALL data with the uploaded backup JSON
 // (produced by /api/admin/backup). Destructive by design — used to migrate
-// between databases (e.g. Render -> Neon). Requires ?confirm=replace.
+// between database providers. Requires ?confirm=replace.
 export async function POST(req: Request) {
   try {
     await requireRole("SUPER_ADMIN");
