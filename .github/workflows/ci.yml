@@ -27,6 +27,8 @@ jobs:
 
     env:
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/orderhub?schema=public"
+      # Schema declares directUrl = env("DIRECT_URL"); migrate deploy needs it.
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/orderhub?schema=public"
       NEXTAUTH_SECRET: "ci-test-secret-not-for-production"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
