@@ -14,8 +14,7 @@ async function main() {
     console.error("Usage: npm run db:restore -- <backup.json>");
     process.exit(1);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = JSON.parse(readFileSync(file, "utf8"));
+  const data = JSON.parse(readFileSync(file, "utf8")); // backup JSON (untyped)
 
   const insert = async (rows: unknown[] | undefined, fn: (r: unknown[]) => Promise<unknown>, label: string) => {
     if (rows && rows.length) {

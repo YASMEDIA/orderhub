@@ -17,8 +17,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: "Missing confirmation." }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let data: any;
+  // CSRF defense for this destructive endpoint: reject cross-origin requests.
+  const origin = req.headers.get("origin");
+  const host = req.headers.get("host");
+  if (origin && host && new URL(origin).host !== host) {
+    return NextResponse.json({ ok: false, message: "Cross-origin request rejected." }, { status: 403 });
+  }
+
+  let data: Record<string, unknown> & { meta?: { app?: string; counts?: unknown } };
   try {
     data = await req.json();
   } catch {
@@ -62,9 +68,9 @@ export async function POST(req: Request) {
       { timeout: 120_000, maxWait: 20_000 },
     );
   } catch (err) {
-    console.error("restore failed", err);
+    console.error("restore failed:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, message: "Restore failed. Nothing was changed." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, counts: data.meta.counts ?? null });
+  return NextResponse.json({ ok: true, counts: data.meta?.counts ?? null });
 }
