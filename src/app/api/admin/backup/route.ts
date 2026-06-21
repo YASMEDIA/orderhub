@@ -14,27 +14,39 @@ export async function GET() {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const [users, projects, products, productTiers, orders, orderItems, activityLogs, settings, orderCounters] =
-    await Promise.all([
-      prisma.user.findMany(),
-      prisma.project.findMany(),
-      prisma.product.findMany(),
-      prisma.productTier.findMany(),
-      prisma.order.findMany(),
-      prisma.orderItem.findMany(),
-      prisma.activityLog.findMany(),
-      prisma.setting.findMany(),
-      prisma.orderCounter.findMany(),
-    ]);
+  const [
+    users,
+    projects,
+    projectAssignments,
+    products,
+    productTiers,
+    orders,
+    orderItems,
+    activityLogs,
+    settings,
+    orderCounters,
+  ] = await Promise.all([
+    prisma.user.findMany(),
+    prisma.project.findMany(),
+    prisma.projectAssignment.findMany(),
+    prisma.product.findMany(),
+    prisma.productTier.findMany(),
+    prisma.order.findMany(),
+    prisma.orderItem.findMany(),
+    prisma.activityLog.findMany(),
+    prisma.setting.findMany(),
+    prisma.orderCounter.findMany(),
+  ]);
 
   const backup = {
     meta: {
       app: "OrderHub",
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       counts: {
         users: users.length,
         projects: projects.length,
+        projectAssignments: projectAssignments.length,
         products: products.length,
         productTiers: productTiers.length,
         orders: orders.length,
@@ -44,10 +56,11 @@ export async function GET() {
         orderCounters: orderCounters.length,
       },
     },
-    // Restore order matters (respects foreign keys): users/projects ->
-    // products -> productTiers -> orders -> orderItems -> logs -> settings.
+    // Restore order matters (respects foreign keys): users + projects ->
+    // projectAssignments -> products -> productTiers -> orders -> orderItems.
     users,
     projects,
+    projectAssignments,
     products,
     productTiers,
     orders,

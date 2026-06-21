@@ -26,6 +26,7 @@ async function main() {
 
   await insert(data.users, (r) => prisma.user.createMany({ data: r as never, skipDuplicates: true }), "users");
   await insert(data.projects, (r) => prisma.project.createMany({ data: r as never, skipDuplicates: true }), "projects");
+  await insert(data.projectAssignments, (r) => prisma.projectAssignment.createMany({ data: r as never, skipDuplicates: true }), "projectAssignments");
   await insert(data.products, (r) => prisma.product.createMany({ data: r as never, skipDuplicates: true }), "products");
   await insert(data.productTiers, (r) => prisma.productTier.createMany({ data: r as never, skipDuplicates: true }), "productTiers");
   await insert(data.orders, (r) => prisma.order.createMany({ data: r as never, skipDuplicates: true }), "orders");
