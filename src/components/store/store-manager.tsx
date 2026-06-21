@@ -73,7 +73,12 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   const [enabled, setEnabled] = useState(project.storeEnabled);
   const [pending, startTransition] = useTransition();
 
-  const storeUrl = typeof window !== "undefined" && slug ? `${window.location.origin}/store/${slug}` : "";
+  // Public store links use the canonical base (e.g. https://mahalatly.com),
+  // not the dashboard subdomain the admin happens to be on.
+  const publicBase = (
+    process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "")
+  ).replace(/\/$/, "");
+  const storeUrl = slug ? `${publicBase}/store/${slug}` : "";
 
   function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
