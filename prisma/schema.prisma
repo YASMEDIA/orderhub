@@ -9,9 +9,9 @@ datasource db {
   provider  = "postgresql"
   // Runtime queries use the pooled connection (good for serverless / Neon).
   url       = env("DATABASE_URL")
-  // Migrations use a direct (non-pooled) connection. DIRECT_URL must be set
-  // wherever migrations run (Vercel build, CI). For a single-instance / non-
-  // pooled DB, set DIRECT_URL equal to DATABASE_URL.
+  // Migrations use a direct (non-pooled) connection. DIRECT_URL is optional:
+  // the Vercel build script falls back to Neon's direct URL (DATABASE_URL_UNPOOLED
+  // / POSTGRES_URL_NON_POOLING) or to DATABASE_URL when it isn't set by hand.
   directUrl = env("DIRECT_URL")
 }
 
