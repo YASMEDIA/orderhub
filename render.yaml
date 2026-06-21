@@ -39,9 +39,14 @@ services:
         value: admin@orderhub.com
       - key: SEED_ADMIN_PASSWORD
         value: Admin@12345
-      # Invoice email delivery (SMTP). New orders email their invoice PDF
-      # automatically. SMTP_PASS is a Gmail App Password — set it in the
-      # Render dashboard (kept out of source control).
+      # Invoice email delivery.
+      # Preferred: Resend (HTTP API). Set RESEND_API_KEY in the Render dashboard
+      # (kept out of source control). When set, it takes precedence over SMTP.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: onboarding@resend.dev
+      # Fallback: SMTP (used only if RESEND_API_KEY is unset).
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

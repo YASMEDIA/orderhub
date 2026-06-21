@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import { renderOrderReceiptPdf, type OrderWithDetails } from "@/lib/order-receipt";
 import { invoiceUrl } from "@/lib/qr";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -9,6 +10,23 @@ import { labelFor, PAYMENT_METHODS, GOVERNORATES } from "@/lib/constants";
 const DEFAULT_NOTIFY_EMAIL = "Malyaseri9@gmail.com";
 
 let cachedTransporter: Transporter | null = null;
+let cachedResend: Resend | null = null;
+
+// Resend (HTTP API) is the preferred provider — faster and more reliable than
+// SMTP. Returns null when RESEND_API_KEY isn't set so we fall back to SMTP.
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  if (!cachedResend) cachedResend = new Resend(key);
+  return cachedResend;
+}
+
+// Sender for Resend. Must be a verified domain in your Resend account, or the
+// shared "onboarding@resend.dev" (test sender — only delivers to your own
+// Resend account email).
+function resendFrom(): string {
+  return process.env.RESEND_FROM?.trim() || "onboarding@resend.dev";
+}
 
 // Builds an SMTP transport from env. Returns null when SMTP isn't configured so
 // callers can degrade gracefully instead of crashing order creation.
@@ -101,9 +119,10 @@ function escapeHtml(value: string): string {
 // flow that triggered them.
 export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
   try {
-    const transporter = getTransporter();
-    if (!transporter) {
-      console.warn(`[email] SMTP not configured; skipping invoice email for order ${orderId}`);
+    const resend = getResend();
+    const transporter = resend ? null : getTransporter();
+    if (!resend && !transporter) {
+      console.warn(`[email] no provider configured (set RESEND_API_KEY or SMTP_*); skipping invoice email for order ${orderId}`);
       return;
     }
 
@@ -114,14 +133,31 @@ export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
     }
     const { pdf, order } = result;
 
-    const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER!;
-    await transporter.sendMail({
-      from,
-      to: notifyEmail(),
-      subject: `New order ${order.orderNumber} — ${order.project.name}`,
-      html: buildHtml(order),
-      attachments: [{ filename: `${order.orderNumber}.pdf`, content: pdf }],
-    });
+    const to = notifyEmail();
+    const subject = `New order ${order.orderNumber} — ${order.project.name}`;
+    const html = buildHtml(order);
+    const filename = `${order.orderNumber}.pdf`;
+
+    if (resend) {
+      const { error } = await resend.emails.send({
+        from: resendFrom(),
+        to,
+        subject,
+        html,
+        attachments: [{ filename, content: pdf }],
+      });
+      // Resend returns an error object instead of throwing.
+      if (error) console.error(`[email] Resend error for order ${orderId}:`, error);
+    } else {
+      const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER!;
+      await transporter!.sendMail({
+        from,
+        to,
+        subject,
+        html,
+        attachments: [{ filename, content: pdf }],
+      });
+    }
   } catch (err) {
     console.error(`[email] failed to send invoice email for order ${orderId}`, err);
   }
