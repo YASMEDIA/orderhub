@@ -131,6 +131,22 @@ docker compose down -v
 
 ---
 
+## Migrating the database (e.g. Render → Neon)
+
+No DB tools required — do it from the dashboard:
+
+1. **Back up the old DB:** in the running app, **Settings → Download full backup (JSON)**. Keep the file.
+2. **Create the new DB** (Neon): copy its **direct** connection string (Neon → Connection Details → uncheck "Pooled connection"), ensure it ends with `?sslmode=require`.
+3. **Point the app at the new DB:** set `DATABASE_URL` to the Neon string and redeploy. On boot the app runs `prisma migrate deploy` (creates the schema on Neon) and seeds a Super Admin — so you can log in (`admin@orderhub.com` / your `SEED_ADMIN_PASSWORD`).
+4. **Restore the data:** **Settings → Restore / Migrate → choose the backup file → "Replace all data with this backup"**. This wipes the fresh Neon data and loads your real data (including users, passwords, project assignments, orders). You'll be signed out — log back in with your original credentials.
+5. Verify, then decommission the old database.
+
+> Notes: use Neon's **direct** (non-pooled) URL so startup migrations work on a single Render instance. Prefer to migrate during a quiet moment — orders placed between steps 1 and 4 on the old DB won't be in the backup.
+
+Prefer the CLI? `DATABASE_URL=<neon> npx prisma migrate deploy` then `DATABASE_URL=<neon> npm run db:restore -- backup.json` (needs Node + the repo).
+
+---
+
 ## Project structure
 
 ```

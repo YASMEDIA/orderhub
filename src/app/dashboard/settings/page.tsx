@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { requireUser } from "@/lib/rbac";
 import { getSettings } from "@/app/actions/settings";
 import { SettingsForm } from "@/components/settings/settings-form";
+import { RestoreBackup } from "@/components/settings/restore-backup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -32,6 +33,20 @@ export default async function SettingsPage() {
           <Button asChild variant="outline">
             <a href="/api/admin/backup"><Download className="h-4 w-4" /> Download full backup (JSON)</a>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-base">Restore / Migrate</CardTitle>
+          <CardDescription>
+            Upload a backup to <span className="font-medium text-destructive">replace all current data</span>.
+            Use this to migrate the database (e.g. Render → Neon): point the app at the new database, then upload
+            the backup downloaded above. You will be signed out and should log in again afterwards.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RestoreBackup />
         </CardContent>
       </Card>
     </div>
