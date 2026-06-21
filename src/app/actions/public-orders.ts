@@ -64,7 +64,7 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
   }
 
   const subtotal = round3(lineItems.reduce((s, it) => s + it.lineTotal, 0));
-  const deliveryFee = deliveryFeeFor(data.governorate, data.area);
+  const deliveryFee = deliveryFeeFor(data.governorate, data.area, subtotal);
   const grandTotal = round3(subtotal + deliveryFee);
   const year = new Date().getFullYear();
 

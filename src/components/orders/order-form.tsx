@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -112,6 +112,13 @@ export function OrderForm({
   );
   const grandTotal = subtotal + deliveryFee;
 
+  // Keep the delivery fee in sync with governorate/area and the rule
+  // (incl. free delivery once the subtotal reaches the threshold). Staff can
+  // still type a manual fee; it persists until governorate/area/items change.
+  useEffect(() => {
+    setValue("deliveryFee", deliveryFeeFor(governorate, area ?? "", subtotal));
+  }, [governorate, area, subtotal, setValue]);
+
   async function onSubmit(values: OrderInput) {
     const res = orderId ? await updateOrder(orderId, values) : await createOrder(values);
     if (!res.ok) {
@@ -193,8 +200,7 @@ export function OrderForm({
               onChange={(e) => {
                 const g = e.target.value as OrderInput["governorate"];
                 setValue("governorate", g);
-                setValue("area", ""); // reset dependent area
-                setValue("deliveryFee", deliveryFeeFor(g, "")); // auto delivery fee
+                setValue("area", ""); // reset dependent area (delivery fee auto-recomputes)
               }}
             >
               {GOVERNORATES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -206,10 +212,7 @@ export function OrderForm({
               value={area ?? ""}
               options={areas}
               placeholder="Search area…"
-              onChange={(v) => {
-                setValue("area", v, { shouldValidate: true });
-                setValue("deliveryFee", deliveryFeeFor(governorate, v)); // auto delivery fee
-              }}
+              onChange={(v) => setValue("area", v, { shouldValidate: true })}
             />
             {/* Registered so the value is always part of the form payload + validation. */}
             <input type="hidden" {...register("area")} />
@@ -328,7 +331,7 @@ export function OrderForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Delivery Fee ({CURRENCY}) — auto by area, editable (0 = Free)</Label>
+              <Label>Delivery Fee ({CURRENCY}) — auto by area, free over 17, editable</Label>
               <Input type="number" step="0.001" min={0} {...register("deliveryFee")} />
             </div>
           </div>

@@ -26,4 +26,17 @@ describe("deliveryFeeFor", () => {
     expect(deliveryFeeFor("AHMADI", "Mangaf")).toBe(2);
     expect(deliveryFeeFor("AHMADI", "")).toBe(2);
   });
+
+  it("is free when the subtotal reaches 17 KD, in any governorate", () => {
+    expect(deliveryFeeFor("AL_ASIMAH", "Sharq", 17)).toBe(0);
+    expect(deliveryFeeFor("AL_ASIMAH", "Sharq", 25.5)).toBe(0);
+    expect(deliveryFeeFor("JAHRA", "Naeem", 17)).toBe(0);
+    expect(deliveryFeeFor("AHMADI", "Khairan", 100)).toBe(0);
+  });
+
+  it("still charges the flat fee below 17 KD", () => {
+    expect(deliveryFeeFor("AL_ASIMAH", "Sharq", 16.999)).toBe(2);
+    expect(deliveryFeeFor("JAHRA", "Naeem", 10)).toBe(3);
+    expect(deliveryFeeFor("AHMADI", "Khairan", 5)).toBe(3);
+  });
 });
