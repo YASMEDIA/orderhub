@@ -41,7 +41,7 @@ export default async function SettingsPage() {
           <CardTitle className="text-base">Restore / Migrate</CardTitle>
           <CardDescription>
             Upload a backup to <span className="font-medium text-destructive">replace all current data</span>.
-            Use this to migrate the database (e.g. Render → Neon): point the app at the new database, then upload
+            Use this to migrate the database (when changing providers): point the app at the new database, then upload
             the backup downloaded above. You will be signed out and should log in again afterwards.
           </CardDescription>
         </CardHeader>
