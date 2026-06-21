@@ -44,8 +44,9 @@ services:
       # (kept out of source control). When set, it takes precedence over SMTP.
       - key: RESEND_API_KEY
         sync: false
+      # Sender — requires the mahalatly.com domain to be verified in Resend.
       - key: RESEND_FROM
-        value: onboarding@resend.dev
+        value: Mahalatly <info@mahalatly.com>
       # Fallback: SMTP (used only if RESEND_API_KEY is unset).
       - key: SMTP_HOST
         value: smtp.gmail.com
