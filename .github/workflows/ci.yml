@@ -42,9 +42,9 @@ jobs:
           # and setup-node's npm cache requires a lockfile to exist.
 
       - name: Install dependencies
-        # Use the lockfile when present (reproducible); fall back on first run.
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        # Prefer the lockfile (reproducible); fall back to npm install when it's
+        # out of sync (e.g. a dependency was added without regenerating the lock).
+        run: npm ci || npm install
 
       - name: Validate Prisma schema
         run: npx prisma validate
