@@ -94,8 +94,8 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
   const subtotal = useMemo(() => Number(cart.reduce((s, x) => s + x.line, 0).toFixed(3)), [cart]);
   const count = cart.reduce((s, x) => s + x.q, 0);
   const deliveryFee = useMemo(
-    () => (cart.length ? deliveryFeeFor(form.governorate, form.area) : 0),
-    [cart.length, form.governorate, form.area],
+    () => (cart.length ? deliveryFeeFor(form.governorate, form.area, subtotal) : 0),
+    [cart.length, form.governorate, form.area, subtotal],
   );
   const grandTotal = useMemo(() => Number((subtotal + deliveryFee).toFixed(3)), [subtotal, deliveryFee]);
 
@@ -395,7 +395,7 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery{form.area ? "" : " (select area)"}</span>
-              <span>{formatAmount(deliveryFee)} {CURRENCY}</span>
+              <span>{deliveryFee > 0 ? `${formatAmount(deliveryFee)} ${CURRENCY}` : "Free"}</span>
             </div>
             <div className="flex justify-between border-t pt-1 text-base font-bold">
               <span>Total</span>
