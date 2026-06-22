@@ -31,8 +31,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, message: "Invalid JSON file." }, { status: 400 });
   }
 
-  if (data?.meta?.app !== "OrderHub" || !Array.isArray(data.users)) {
-    return NextResponse.json({ ok: false, message: "This file is not an OrderHub backup." }, { status: 400 });
+  // Accept current "Mahalatly" backups plus legacy "OrderHub" exports, so
+  // backups taken before the rebrand still restore.
+  if ((data?.meta?.app !== "Mahalatly" && data?.meta?.app !== "OrderHub") || !Array.isArray(data.users)) {
+    return NextResponse.json({ ok: false, message: "This file is not a Mahalatly backup." }, { status: 400 });
   }
 
   const rows = (k: string): never => (Array.isArray(data[k]) ? data[k] : []) as never;

@@ -21,5 +21,5 @@ if [ "$SEED_ON_START" = "true" ]; then
   npm run db:seed || echo "⚠️  Seed step failed (continuing)."
 fi
 
-echo "🚀 Starting OrderHub..."
+echo "🚀 Starting Mahalatly..."
 exec "$@"

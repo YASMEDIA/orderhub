@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 // Restores a backup produced by the dashboard "Download full backup (JSON)"
 // (or GET /api/admin/backup) into the database in DATABASE_URL.
-// Usage: npm run db:restore -- path/to/orderhub-backup.json
+// Usage: npm run db:restore -- path/to/mahalatly-backup.json
 // Inserts in foreign-key order; createMany skips duplicates so it's safe to
 // run against a fresh database.
 async function main() {

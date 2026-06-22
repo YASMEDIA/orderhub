@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { Topbar } from "@/components/dashboard/topbar";
+import { BrandLogo } from "@/components/brand";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -12,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen">
       <aside className="hidden w-64 shrink-0 border-r bg-card lg:block">
         <div className="flex h-16 items-center border-b px-6">
-          <span className="text-xl font-bold tracking-tight">OrderHub</span>
+          <BrandLogo className="h-8" />
         </div>
         <SidebarNav role={role} />
       </aside>

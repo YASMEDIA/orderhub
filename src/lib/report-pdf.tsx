@@ -28,7 +28,7 @@ export async function renderReportPdf(report: ReportData): Promise<Buffer> {
   const doc = (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>OrderHub Report</Text>
+        <Text style={styles.h1}>Mahalatly Report</Text>
         <Text style={styles.muted}>
           {formatDate(report.range.start)} — {formatDate(report.range.end)}
         </Text>
