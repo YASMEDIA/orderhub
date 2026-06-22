@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { labelFor, ROLES } from "@/lib/constants";
+import { BrandLogo } from "@/components/brand";
 
 export function Topbar({ name, email, role }: { name: string; email: string; role: Role }) {
   return (
@@ -29,11 +30,13 @@ export function Topbar({ name, email, role }: { name: string; email: string; rol
             </Button>
           </DialogTrigger>
           <DialogContent className="left-0 top-0 h-full max-w-[260px] translate-x-0 translate-y-0 rounded-none p-0">
-            <DialogTitle className="px-4 pt-4 text-lg font-bold">OrderHub</DialogTitle>
+            <DialogTitle className="px-4 pt-4">
+              <BrandLogo className="h-7" />
+            </DialogTitle>
             <SidebarNav role={role} />
           </DialogContent>
         </Dialog>
-        <span className="text-lg font-bold lg:hidden">OrderHub</span>
+        <BrandLogo className="h-7 lg:hidden" />
       </div>
 
       <div className="flex items-center gap-2">

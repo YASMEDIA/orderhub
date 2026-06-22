@@ -40,7 +40,7 @@ export async function GET() {
 
   const backup = {
     meta: {
-      app: "OrderHub",
+      app: "Mahalatly",
       version: 2,
       exportedAt: new Date().toISOString(),
       counts: {
@@ -74,7 +74,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(backup, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="orderhub-backup-${stamp}.json"`,
+      "Content-Disposition": `attachment; filename="mahalatly-backup-${stamp}.json"`,
       "Cache-Control": "no-store",
     },
   });

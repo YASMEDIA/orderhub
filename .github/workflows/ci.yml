@@ -16,19 +16,19 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: orderhub
+          POSTGRES_DB: mahalatly
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d orderhub"
+          --health-cmd "pg_isready -U postgres -d mahalatly"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/orderhub?schema=public"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/mahalatly?schema=public"
       # Schema declares directUrl = env("DIRECT_URL"); migrate deploy needs it.
-      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/orderhub?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/mahalatly?schema=public"
       NEXTAUTH_SECRET: "ci-test-secret-not-for-production"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"

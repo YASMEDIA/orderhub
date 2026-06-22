@@ -1,4 +1,4 @@
-# OrderHub
+# Mahalatly
 
 A production-ready, multi-tenant SaaS platform for managing delivery orders and generating **80mm thermal receipt** invoices for multiple businesses from a single dashboard.
 
@@ -62,8 +62,8 @@ npm run dev
 Open http://localhost:3000 and sign in with the seeded Super Admin.
 
 Seeded accounts:
-- **Super Admin:** `admin@orderhub.com` / `Admin@12345`
-- **Employee:** `employee@orderhub.com` / `Employee@123`
+- **Super Admin:** `admin@mahalatly.com` / `Admin@12345`
+- **Employee:** `employee@mahalatly.com` / `Employee@123`
 
 > Change these immediately in any real deployment.
 
@@ -94,10 +94,10 @@ docker compose up --build
 ```
 
 Then open http://localhost:3000 and sign in with the seeded Super Admin
-(`admin@orderhub.com` / `Admin@12345`).
+(`admin@mahalatly.com` / `Admin@12345`).
 
 - The `app` container waits for Postgres, runs `prisma migrate deploy`, and (when `SEED_ON_START=true`, the default) seeds idempotently.
-- Postgres data persists in the `orderhub-pgdata` volume across restarts.
+- Postgres data persists in the `mahalatly-pgdata` volume across restarts.
 - Override any value via env vars (`NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ON_START=false`).
 
 To stop and wipe the database:

@@ -1,4 +1,4 @@
-// OrderHub — Prisma schema
+// Mahalatly — Prisma schema
 // PostgreSQL relational model for multi-tenant delivery order management.
 
 generator client {

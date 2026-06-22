@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="orderhub-report.xlsx"`,
+        "Content-Disposition": `attachment; filename="mahalatly-report.xlsx"`,
       },
     });
   }
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="orderhub-report.pdf"`,
+      "Content-Disposition": `attachment; filename="mahalatly-report.pdf"`,
     },
   });
 }

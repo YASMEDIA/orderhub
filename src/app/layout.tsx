@@ -6,8 +6,13 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "OrderHub — Delivery Order Management",
+  title: "Mahalatly — Delivery Order Management",
   description: "Manage delivery orders and generate thermal receipts for multiple businesses.",
+  icons: {
+    icon: "/brand/mahalatly-icon.svg",
+    shortcut: "/brand/mahalatly-icon.svg",
+    apple: "/brand/mahalatly-icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

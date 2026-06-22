@@ -5,8 +5,9 @@ import { formatMoney, formatAmount, formatDate } from "@/lib/format";
 import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
 import { buildMapsLink, isExactLocation } from "@/lib/location";
 import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
+import { PoweredBy } from "@/components/brand";
 
-export const metadata: Metadata = { title: "Invoice — OrderHub" };
+export const metadata: Metadata = { title: "Invoice — Mahalatly" };
 
 export default async function PublicInvoicePage({ params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
@@ -122,8 +123,8 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           </div>
         ) : null}
 
-        <div className="border-t px-6 py-4 text-center text-xs text-muted-foreground">
-          Powered by OrderHub
+        <div className="border-t px-6 py-4 text-center">
+          <PoweredBy />
         </div>
       </div>
     </div>

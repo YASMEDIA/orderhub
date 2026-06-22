@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useToast } from "@/components/ui/toast";
+import { PoweredBy } from "@/components/brand";
 
 type Product = {
   id: string;
@@ -211,6 +212,7 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
         <button type="button" onClick={resetOrder} className="text-sm text-primary hover:underline">
           Place another order
         </button>
+        <PoweredBy className="mt-6" />
       </div>
     );
   }
@@ -295,6 +297,10 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
               );
             })
           )}
+
+          <div className="pt-4 text-center">
+            <PoweredBy />
+          </div>
 
           {/* Sticky: view cart */}
           <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
