@@ -29,6 +29,7 @@ export type ReceiptData = {
   footer?: string | null;
   instagram?: string | null;
   tiktok?: string | null;
+  whatsapp?: string | null;
 };
 
 // Strip protocol/www for a compact thermal-friendly handle.
@@ -137,11 +138,12 @@ function ReceiptDoc(d: ReceiptData) {
         <Text style={styles.muted}>Generated: {formatDateTime(d.generatedAt)}</Text>
         <Text style={styles.muted}>Thank you!</Text>
 
-        {d.instagram || d.tiktok ? (
+        {d.instagram || d.tiktok || d.whatsapp ? (
           <View>
             <View style={styles.hr} />
             {d.instagram ? <Text style={styles.muted}>Instagram: {cleanSocial(d.instagram)}</Text> : null}
             {d.tiktok ? <Text style={styles.muted}>TikTok: {cleanSocial(d.tiktok)}</Text> : null}
+            {d.whatsapp ? <Text style={styles.muted}>WhatsApp: {d.whatsapp}</Text> : null}
           </View>
         ) : null}
       </Page>

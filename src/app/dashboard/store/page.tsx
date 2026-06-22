@@ -32,6 +32,10 @@ export default async function StorePage() {
           slug: p.slug,
           logoUrl: p.logoUrl,
           storeEnabled: p.storeEnabled,
+          instagram: p.instagram,
+          tiktok: p.tiktok,
+          whatsapp: p.whatsapp,
+          phone: p.phone,
         }))}
         products={products.map((p) => ({
           id: p.id,

@@ -85,6 +85,7 @@ model Project {
   website     String?
   instagram   String?
   tiktok      String?
+  whatsapp    String?
   status      ProjectStatus       @default(ACTIVE)
   slug         String?            @unique // public storefront URL: /store/:slug
   logoUrl      String?

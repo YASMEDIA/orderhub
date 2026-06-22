@@ -27,7 +27,15 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
   return (
     <Storefront
-      project={{ name: project.name, slug: project.slug!, logoUrl: project.logoUrl, phone: project.phone }}
+      project={{
+        name: project.name,
+        slug: project.slug!,
+        logoUrl: project.logoUrl,
+        phone: project.phone,
+        instagram: project.instagram,
+        tiktok: project.tiktok,
+        whatsapp: project.whatsapp,
+      }}
       products={project.products.map((p) => ({
         id: p.id,
         name: p.name,

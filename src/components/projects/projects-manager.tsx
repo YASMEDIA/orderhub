@@ -99,10 +99,8 @@ export function ProjectsManager({ projects }: { projects: (Project & { _count: {
           <DialogHeader><DialogTitle>{editing ? "Edit Project" : "New Project"}</DialogTitle></DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2"><Label>Project Name</Label><Input name="name" defaultValue={editing?.name} required /></div>
-            <div className="space-y-2"><Label>Phone Number (optional)</Label><Input name="phone" defaultValue={editing?.phone ?? ""} /></div>
             <div className="space-y-2"><Label>Website (optional)</Label><Input name="website" type="url" defaultValue={editing?.website ?? ""} placeholder="https://" /></div>
-            <div className="space-y-2"><Label>Instagram URL (optional)</Label><Input name="instagram" type="url" defaultValue={editing?.instagram ?? ""} placeholder="https://instagram.com/..." /></div>
-            <div className="space-y-2"><Label>TikTok URL (optional)</Label><Input name="tiktok" type="url" defaultValue={editing?.tiktok ?? ""} placeholder="https://tiktok.com/@..." /></div>
+            <p className="text-xs text-muted-foreground">Phone &amp; social links (Instagram, TikTok, WhatsApp) are managed on the Store page.</p>
             <div className="space-y-2">
               <Label>Status</Label>
               <select name="status" defaultValue={editing?.status ?? "ACTIVE"} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
