@@ -45,6 +45,7 @@ export async function renderOrderReceiptPdf(
     footer: settings.receiptFooter,
     instagram: order.project.instagram,
     tiktok: order.project.tiktok,
+    whatsapp: order.project.whatsapp,
   });
 
   return { pdf, order };

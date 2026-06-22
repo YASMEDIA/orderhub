@@ -7,12 +7,20 @@ const optionalUrl = z
   .optional()
   .or(z.literal("").transform(() => undefined));
 
+// Contact / social fields accept a bare username, a full URL, or a number —
+// they're normalised into links at render time (see src/lib/social.ts).
+const optionalText = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal("").transform(() => undefined));
+
+// Project core attributes. Contact / social fields (phone, instagram, tiktok,
+// whatsapp) are owned by the Store page (updateStoreSettings), not here — so
+// editing a project never clobbers the storefront's contact details.
 export const projectSchema = z.object({
   name: z.string().trim().min(2, "Project name is required"),
-  phone: z.string().trim().optional().or(z.literal("").transform(() => undefined)),
   website: optionalUrl,
-  instagram: optionalUrl,
-  tiktok: optionalUrl,
   status: z.enum(["ACTIVE", "INACTIVE"]),
 });
 export type ProjectInput = z.infer<typeof projectSchema>;
@@ -104,6 +112,12 @@ export const storeSettingsSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
   storeEnabled: z.coerce.boolean().default(false),
   logoUrl: z.string().trim().default(""),
+  // Contact / social shown under the store name. All optional; a username,
+  // full URL or phone number is accepted and turned into a link on display.
+  instagram: optionalText,
+  tiktok: optionalText,
+  whatsapp: optionalText,
+  phone: optionalText,
 });
 export type StoreSettingsInput = z.infer<typeof storeSettingsSchema>;
 

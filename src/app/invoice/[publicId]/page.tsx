@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
 import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
 import { buildMapsLink, isExactLocation } from "@/lib/location";
+import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
 
 export const metadata: Metadata = { title: "Invoice — OrderHub" };
 
@@ -23,6 +24,14 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
     order.floor ? `Floor ${order.floor}` : null,
     order.apartmentNumber ? `Apt ${order.apartmentNumber}` : null,
   ].filter(Boolean).join(" · ");
+
+  // Normalise contact/social values (stored as usernames or numbers) into links.
+  const contactLinks = [
+    { href: instagramUrl(order.project.instagram), label: "Instagram" },
+    { href: tiktokUrl(order.project.tiktok), label: "TikTok" },
+    { href: whatsappUrl(order.project.whatsapp), label: "WhatsApp" },
+    { href: telHref(order.project.phone), label: "Call" },
+  ].filter((l): l is { href: string; label: string } => Boolean(l.href));
 
   return (
     <div className="force-light min-h-screen bg-muted/40 px-4 py-8 text-foreground">
@@ -94,20 +103,21 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {order.project.instagram || order.project.tiktok ? (
+        {contactLinks.length ? (
           <div className="border-t px-6 py-4 text-center">
-            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Follow us</p>
-            <div className="flex items-center justify-center gap-4 text-sm">
-              {order.project.instagram ? (
-                <a href={order.project.instagram} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                  Instagram
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Contact us</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+              {contactLinks.map((l) => (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  target={l.href.startsWith("tel:") ? undefined : "_blank"}
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary hover:underline"
+                >
+                  {l.label}
                 </a>
-              ) : null}
-              {order.project.tiktok ? (
-                <a href={order.project.tiktok} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                  TikTok
-                </a>
-              ) : null}
+              ))}
             </div>
           </div>
         ) : null}

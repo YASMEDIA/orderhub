@@ -23,6 +23,10 @@ type ProjectRow = {
   slug: string | null;
   logoUrl: string | null;
   storeEnabled: boolean;
+  instagram: string | null;
+  tiktok: string | null;
+  whatsapp: string | null;
+  phone: string | null;
 };
 type Tier = { minQuantity: number | string; unitPrice: number | string };
 type ProductRow = {
@@ -71,6 +75,10 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   const [slug, setSlug] = useState(project.slug ?? "");
   const [logo, setLogo] = useState(project.logoUrl ?? "");
   const [enabled, setEnabled] = useState(project.storeEnabled);
+  const [instagram, setInstagram] = useState(project.instagram ?? "");
+  const [tiktok, setTiktok] = useState(project.tiktok ?? "");
+  const [whatsapp, setWhatsapp] = useState(project.whatsapp ?? "");
+  const [phone, setPhone] = useState(project.phone ?? "");
   const [pending, startTransition] = useTransition();
 
   // Public store links use the canonical base (e.g. https://mahalatly.com),
@@ -94,7 +102,15 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
 
   function save() {
     startTransition(async () => {
-      const res = await updateStoreSettings(project.id, { slug, storeEnabled: enabled, logoUrl: logo });
+      const res = await updateStoreSettings(project.id, {
+        slug,
+        storeEnabled: enabled,
+        logoUrl: logo,
+        instagram,
+        tiktok,
+        whatsapp,
+        phone,
+      });
       toast({ title: res.ok ? "Saved" : "Error", description: res.ok ? undefined : res.message, variant: res.ok ? "default" : "destructive" });
       if (res.ok) router.refresh();
     });
@@ -138,6 +154,33 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
               <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
               Store is live (public)
             </label>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-md border p-4">
+          <div>
+            <p className="text-sm font-medium">Contact &amp; Social (optional)</p>
+            <p className="text-xs text-muted-foreground">
+              Shown as icons under your store name. Leave any field empty to hide its icon.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Instagram</Label>
+              <Input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="username (e.g. mahalatly)" />
+            </div>
+            <div className="space-y-2">
+              <Label>TikTok</Label>
+              <Input value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="username (e.g. mahalatly)" />
+            </div>
+            <div className="space-y-2">
+              <Label>WhatsApp</Label>
+              <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="number with code (e.g. 96550001111)" inputMode="tel" />
+            </div>
+            <div className="space-y-2">
+              <Label>Phone (direct call)</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="number (e.g. 96550001111)" inputMode="tel" />
+            </div>
           </div>
         </div>
 

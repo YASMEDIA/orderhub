@@ -8,16 +8,14 @@ import { logActivity } from "@/lib/activity";
 
 export type ProjectActionResult = { ok: boolean; message: string };
 
-// Note: storefront fields (slug, logoUrl, storeEnabled) are intentionally NOT
-// managed here — the Store page (updateStoreSettings) owns them, so editing a
-// project never clobbers store config.
+// Note: storefront fields (slug, logoUrl, storeEnabled) and contact/social
+// fields (phone, instagram, tiktok, whatsapp) are intentionally NOT managed
+// here — the Store page (updateStoreSettings) owns them, so editing a project
+// never clobbers store config or contact details.
 function parse(formData: FormData) {
   return projectSchema.safeParse({
     name: formData.get("name"),
-    phone: formData.get("phone") ?? "",
     website: formData.get("website") ?? "",
-    instagram: formData.get("instagram") ?? "",
-    tiktok: formData.get("tiktok") ?? "",
     status: formData.get("status"),
   });
 }
