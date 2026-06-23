@@ -16,9 +16,12 @@ describe("invoiceUrl", () => {
     for (const k of ENV_KEYS) delete process.env[k];
   });
   afterEach(() => {
+    // Cast away the ambient ProcessEnv typing (some keys, e.g. VERCEL, are typed
+    // as string literals) so restoring an arbitrary string value type-checks.
+    const env = process.env as Record<string, string | undefined>;
     for (const k of ENV_KEYS) {
-      if (saved[k] === undefined) delete process.env[k];
-      else process.env[k] = saved[k];
+      if (saved[k] === undefined) delete env[k];
+      else env[k] = saved[k];
     }
   });
 
