@@ -110,11 +110,60 @@ model Product {
   project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId  String
   tiers      ProductTier[]
+  variants   ProductVariant[]
   orderItems OrderItem[]
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
   @@index([projectId])
+}
+
+// A selectable variant of a product (e.g. a colour), with its own independent
+// stock and images. Tier pricing is based on the TOTAL quantity across all of a
+// product's variants, not per-variant — see lib/pricing.ts.
+model ProductVariant {
+  id         String                @id @default(cuid())
+  product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  name       String                // e.g. "Black"
+  colorHex   String                @default("#000000") // swatch colour
+  sku        String?               // optional stock-keeping unit
+  stock      Int                   @default(0) // independent inventory
+  isActive   Boolean               @default(true)
+  position   Int                   @default(0) // display order
+  images     ProductVariantImage[]
+  orderItems OrderItem[]
+  movements  InventoryMovement[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@index([productId])
+}
+
+// One image belonging to a variant (data URL or https). Multiple per variant.
+model ProductVariantImage {
+  id        String         @id @default(cuid())
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId String
+  url       String
+  position  Int            @default(0)
+
+  @@index([variantId])
+}
+
+// Audit trail of every stock change for a variant. delta is negative for a sale
+// (stock out) and positive for a restock/adjustment.
+model InventoryMovement {
+  id        String         @id @default(cuid())
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId String
+  delta     Int
+  reason    String         // "ORDER" | "RESTOCK" | "ADJUSTMENT"
+  orderId   String?        // set when caused by an order
+  createdAt DateTime       @default(now())
+
+  @@index([variantId])
+  @@index([orderId])
 }
 
 // "From minQuantity units, unit price becomes unitPrice." e.g. (5, 1.8), (10, 1.7).
@@ -198,8 +247,16 @@ model OrderItem {
   unitPrice   Float
   lineTotal   Float
 
+  // Variant snapshot — kept on the line so invoices stay accurate even if the
+  // variant is later renamed or deleted. variantId is nullable (SetNull).
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantId    String?
+  variantName  String?
+  variantColor String?
+
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
 }
 
 model ActivityLog {

@@ -12,7 +12,13 @@ export default async function StorePage() {
     getAccessibleProjects(),
     prisma.product.findMany({
       where: projectScopeWhere(user),
-      include: { tiers: { orderBy: { minQuantity: "asc" } } },
+      include: {
+        tiers: { orderBy: { minQuantity: "asc" } },
+        variants: {
+          orderBy: { position: "asc" },
+          include: { images: { orderBy: { position: "asc" } } },
+        },
+      },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -46,6 +52,15 @@ export default async function StorePage() {
           isActive: p.isActive,
           projectId: p.projectId,
           tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+          variants: p.variants.map((v) => ({
+            id: v.id,
+            name: v.name,
+            colorHex: v.colorHex,
+            sku: v.sku,
+            stock: v.stock,
+            isActive: v.isActive,
+            images: v.images.map((img) => img.url),
+          })),
         }))}
       />
     </div>

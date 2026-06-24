@@ -3,9 +3,15 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Storefront } from "@/components/store/storefront";
 
+// Slugs are stored lowercase; normalize the incoming param so links that arrive
+// with different casing or surrounding whitespace still resolve to the store.
+function normalizeSlug(slug: string): string {
+  return decodeURIComponent(slug).trim().toLowerCase();
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const project = await prisma.project.findUnique({ where: { slug } });
+  const project = await prisma.project.findUnique({ where: { slug: normalizeSlug(slug) } });
   if (!project) return { title: "Store" };
   return {
     title: `${project.name} — Order Online`,
@@ -22,11 +28,18 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
 
   const project = await prisma.project.findUnique({
-    where: { slug },
+    where: { slug: normalizeSlug(slug) },
     include: {
       products: {
         where: { isActive: true },
-        include: { tiers: { orderBy: { minQuantity: "asc" } } },
+        include: {
+          tiers: { orderBy: { minQuantity: "asc" } },
+          variants: {
+            where: { isActive: true },
+            orderBy: { position: "asc" },
+            include: { images: { orderBy: { position: "asc" } } },
+          },
+        },
         orderBy: { name: "asc" },
       },
     },
@@ -52,6 +65,13 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         images: p.images,
         basePrice: p.basePrice,
         tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+        variants: p.variants.map((v) => ({
+          id: v.id,
+          name: v.name,
+          colorHex: v.colorHex,
+          stock: v.stock,
+          images: v.images.map((img) => img.url),
+        })),
       }))}
     />
   );

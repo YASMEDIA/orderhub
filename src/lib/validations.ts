@@ -29,6 +29,7 @@ export type ProjectInput = z.infer<typeof projectSchema>;
 // server computes prices — never trust client-supplied prices.
 export const publicOrderItemSchema = z.object({
   productId: z.string().min(1),
+  variantId: z.string().optional().or(z.literal("").transform(() => undefined)),
   quantity: z.coerce.number().int().min(1),
 });
 
@@ -82,6 +83,23 @@ export const productTierSchema = z.object({
   unitPrice: z.coerce.number().min(0, "Cannot be negative"),
 });
 
+// A product variant (e.g. a colour) with independent stock and its own images.
+export const productVariantSchema = z.object({
+  // Present when editing an existing variant; absent for a newly added one.
+  id: z.string().optional().or(z.literal("").transform(() => undefined)),
+  name: z.string().trim().min(1, "Variant name is required"),
+  colorHex: z
+    .string()
+    .trim()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Use a hex colour like #1a1a1a")
+    .default("#000000"),
+  sku: z.string().trim().max(64).optional().or(z.literal("").transform(() => undefined)),
+  stock: z.coerce.number().int().min(0, "Stock cannot be negative").default(0),
+  isActive: z.coerce.boolean().default(true),
+  images: z.array(z.string()).max(6, "Up to 6 images per variant").default([]),
+});
+export type ProductVariantInput = z.infer<typeof productVariantSchema>;
+
 export const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required"),
   description: z
@@ -97,6 +115,8 @@ export const productSchema = z.object({
   // Optional (not defaulted): when omitted, the action leaves existing images
   // untouched, so editing a product elsewhere never wipes its images.
   images: z.array(z.string()).max(4, "Up to 4 images per product").optional(),
+  // Optional: when omitted, variants are left untouched.
+  variants: z.array(productVariantSchema).optional(),
 });
 export type ProductInput = z.infer<typeof productSchema>;
 

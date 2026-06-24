@@ -16,6 +16,7 @@ import { createProduct, updateProduct, deleteProduct } from "@/app/actions/produ
 import { useToast } from "@/components/ui/toast";
 import { formatAmount } from "@/lib/format";
 import { CURRENCY } from "@/lib/constants";
+import { VariantsEditor, type VariantDraft } from "@/components/store/variants-editor";
 
 type ProjectRow = {
   id: string;
@@ -29,6 +30,15 @@ type ProjectRow = {
   phone: string | null;
 };
 type Tier = { minQuantity: number | string; unitPrice: number | string };
+type VariantRow = {
+  id: string;
+  name: string;
+  colorHex: string;
+  sku: string | null;
+  stock: number;
+  isActive: boolean;
+  images: string[];
+};
 type ProductRow = {
   id: string;
   name: string;
@@ -38,6 +48,7 @@ type ProductRow = {
   isActive: boolean;
   projectId: string;
   tiers: { minQuantity: number; unitPrice: number }[];
+  variants: VariantRow[];
 };
 
 export function StoreManager({ projects, products }: { projects: ProjectRow[]; products: ProductRow[] }) {
@@ -220,14 +231,16 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
   const [basePrice, setBasePrice] = useState("0");
   const [isActive, setIsActive] = useState(true);
   const [tiers, setTiers] = useState<Tier[]>([]);
+  const [variants, setVariants] = useState<VariantDraft[]>([]);
   const [pending, startTransition] = useTransition();
 
   function openCreate() {
-    setEditing(null); setName(""); setDescription(""); setImages([]); setBasePrice("0"); setIsActive(true); setTiers([]); setOpen(true);
+    setEditing(null); setName(""); setDescription(""); setImages([]); setBasePrice("0"); setIsActive(true); setTiers([]); setVariants([]); setOpen(true);
   }
   function openEdit(p: ProductRow) {
     setEditing(p); setName(p.name); setDescription(p.description ?? ""); setImages(p.images ?? []); setBasePrice(String(p.basePrice)); setIsActive(p.isActive);
     setTiers(p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })));
+    setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, sku: v.sku ?? "", stock: v.stock, isActive: v.isActive, images: v.images })));
     setOpen(true);
   }
 
@@ -258,6 +271,17 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
       tiers: tiers
         .filter((t) => String(t.minQuantity) !== "" && String(t.unitPrice) !== "")
         .map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+      variants: variants
+        .filter((v) => v.name.trim() !== "")
+        .map((v) => ({
+          ...(v.id ? { id: v.id } : {}),
+          name: v.name,
+          colorHex: v.colorHex,
+          sku: v.sku,
+          stock: v.stock === "" ? 0 : v.stock,
+          isActive: v.isActive,
+          images: v.images,
+        })),
     };
     startTransition(async () => {
       const res = editing ? await updateProduct(editing.id, payload) : await createProduct(payload);
@@ -290,6 +314,7 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
             <TableRow>
               <TableHead>Product</TableHead>
               <TableHead>Base Price</TableHead>
+              <TableHead>Variants</TableHead>
               <TableHead>Quantity Tiers</TableHead>
               <TableHead>Status</TableHead>
               <TableHead></TableHead>
@@ -297,7 +322,7 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No products yet. Add your first product.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No products yet. Add your first product.</TableCell></TableRow>
             ) : (
               products.map((p) => (
                 <TableRow key={p.id}>
@@ -314,6 +339,27 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
                     </div>
                   </TableCell>
                   <TableCell>{formatAmount(p.basePrice)} {CURRENCY}</TableCell>
+                  <TableCell>
+                    {p.variants.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex -space-x-1">
+                          {p.variants.slice(0, 5).map((v) => (
+                            <span
+                              key={v.id}
+                              title={`${v.name} · ${v.stock} in stock`}
+                              className="h-4 w-4 rounded-full border border-background ring-1 ring-border"
+                              style={{ backgroundColor: v.colorHex }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {p.variants.reduce((s, v) => s + v.stock, 0)} in stock
+                        </span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {p.tiers.length === 0 ? "—" : p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(", ")}
                   </TableCell>
@@ -395,6 +441,11 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
                 <Plus className="h-4 w-4" /> Add Tier
               </Button>
             </div>
+
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <VariantsEditor variants={variants} onChange={setVariants} />
+            </div>
+
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
               Visible in the store
