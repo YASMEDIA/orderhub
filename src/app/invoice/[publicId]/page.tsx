@@ -79,12 +79,23 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                 <div key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
                   <div>
                     <p className="font-medium">{it.productName}</p>
+                    {it.variantName ? (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {it.variantColor ? (
+                          <span className="h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
+                        ) : null}
+                        {it.variantName}
+                      </p>
+                    ) : null}
                     <p className="text-xs text-muted-foreground">{it.quantity} × {formatAmount(it.unitPrice)}</p>
                   </div>
                   <p className="font-medium">{formatAmount(it.lineTotal)}</p>
                 </div>
               ))}
             </div>
+            <p className="mt-1 text-right text-xs text-muted-foreground">
+              Total quantity: {order.items.reduce((s, it) => s + it.quantity, 0)}
+            </p>
           </div>
 
           <div className="space-y-1 text-sm">

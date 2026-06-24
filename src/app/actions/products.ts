@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requireUser, requireRole, assertProjectAccess, projectScopeWhere, AuthError } from "@/lib/rbac";
-import { productSchema } from "@/lib/validations";
+import { productSchema, type ProductVariantInput } from "@/lib/validations";
 import { logActivity } from "@/lib/activity";
 
 export type ProductActionResult = { ok: boolean; message: string };
@@ -14,16 +15,77 @@ function sortTiers(tiers: { minQuantity: number; unitPrice: number }[]) {
 }
 
 // Keep only valid images: an https URL, or a base64 image data URL within size.
+function isValidImage(v: string): boolean {
+  return /^https:\/\//i.test(v)
+    ? v.length <= 2000
+    : /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= 700_000;
+}
+
 // Returns undefined when input is undefined (so updates can skip the field).
 function sanitizeImages(images: string[] | undefined): string[] | undefined {
   if (images === undefined) return undefined;
-  return images
-    .filter((v) =>
-      /^https:\/\//i.test(v)
-        ? v.length <= 2000
-        : /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= 700_000,
-    )
-    .slice(0, 4);
+  return images.filter(isValidImage).slice(0, 4);
+}
+
+// Reconcile a product's variants against the submitted set: update existing
+// (by id), create new (no id), delete the rest. Each variant's images are
+// replaced wholesale, and a stock change records an ADJUSTMENT movement so the
+// inventory audit trail stays complete.
+async function syncVariants(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  variants: ProductVariantInput[],
+) {
+  const existing = await tx.productVariant.findMany({ where: { productId }, select: { id: true, stock: true } });
+  const existingById = new Map(existing.map((v) => [v.id, v]));
+  const keptIds = new Set(variants.map((v) => v.id).filter(Boolean) as string[]);
+
+  // Delete variants the admin removed.
+  const toDelete = existing.filter((v) => !keptIds.has(v.id)).map((v) => v.id);
+  if (toDelete.length) await tx.productVariant.deleteMany({ where: { id: { in: toDelete } } });
+
+  for (let i = 0; i < variants.length; i++) {
+    const v = variants[i];
+    const images = v.images.filter(isValidImage).slice(0, 6);
+    const imageRows = images.map((url, position) => ({ url, position }));
+
+    if (v.id && existingById.has(v.id)) {
+      const prev = existingById.get(v.id)!;
+      await tx.productVariant.update({
+        where: { id: v.id },
+        data: {
+          name: v.name,
+          colorHex: v.colorHex,
+          sku: v.sku ?? null,
+          stock: v.stock,
+          isActive: v.isActive,
+          position: i,
+          images: { deleteMany: {}, create: imageRows },
+        },
+      });
+      if (prev.stock !== v.stock) {
+        await tx.inventoryMovement.create({
+          data: { variantId: v.id, delta: v.stock - prev.stock, reason: "ADJUSTMENT" },
+        });
+      }
+    } else {
+      await tx.productVariant.create({
+        data: {
+          productId,
+          name: v.name,
+          colorHex: v.colorHex,
+          sku: v.sku ?? null,
+          stock: v.stock,
+          isActive: v.isActive,
+          position: i,
+          images: { create: imageRows },
+          ...(v.stock > 0
+            ? { movements: { create: { delta: v.stock, reason: "RESTOCK" } } }
+            : {}),
+        },
+      });
+    }
+  }
 }
 
 export async function createProduct(input: unknown): Promise<ProductActionResult> {
@@ -34,16 +96,20 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
     const data = parsed.data;
     await assertProjectAccess(user, data.projectId);
 
-    const product = await prisma.product.create({
-      data: {
-        name: data.name,
-        description: data.description ?? null,
-        images: sanitizeImages(data.images) ?? [],
-        projectId: data.projectId,
-        basePrice: data.basePrice,
-        isActive: data.isActive,
-        tiers: { create: sortTiers(data.tiers) },
-      },
+    const product = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({
+        data: {
+          name: data.name,
+          description: data.description ?? null,
+          images: sanitizeImages(data.images) ?? [],
+          projectId: data.projectId,
+          basePrice: data.basePrice,
+          isActive: data.isActive,
+          tiers: { create: sortTiers(data.tiers) },
+        },
+      });
+      if (data.variants !== undefined) await syncVariants(tx, created.id, data.variants);
+      return created;
     });
     await logActivity({ userId: user.id, action: "Create Product", detail: product.name, projectId: data.projectId });
     revalidatePath("/dashboard/products");
@@ -82,6 +148,7 @@ export async function updateProduct(id: string, input: unknown): Promise<Product
           ...(images !== undefined ? { images } : {}), // skip when not provided
         },
       });
+      if (data.variants !== undefined) await syncVariants(tx, id, data.variants);
     });
     await logActivity({ userId: user.id, action: "Edit Product", detail: data.name, projectId: data.projectId });
     revalidatePath("/dashboard/products");

@@ -112,7 +112,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <TableBody>
               {order.items.map((it) => (
                 <TableRow key={it.id}>
-                  <TableCell>{it.productName}</TableCell>
+                  <TableCell>
+                    {it.productName}
+                    {it.variantName ? (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        {it.variantColor ? (
+                          <span className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
+                        ) : null}
+                        {it.variantName}
+                      </span>
+                    ) : null}
+                  </TableCell>
                   <TableCell className="text-center">{it.quantity}</TableCell>
                   <TableCell className="text-right">{formatAmount(it.unitPrice)}</TableCell>
                   <TableCell className="text-right">{formatAmount(it.lineTotal)}</TableCell>

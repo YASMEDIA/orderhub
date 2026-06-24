@@ -23,7 +23,14 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
     include: {
       products: {
         where: { isActive: true },
-        include: { tiers: { orderBy: { minQuantity: "asc" } } },
+        include: {
+          tiers: { orderBy: { minQuantity: "asc" } },
+          variants: {
+            where: { isActive: true },
+            orderBy: { position: "asc" },
+            include: { images: { orderBy: { position: "asc" } } },
+          },
+        },
         orderBy: { name: "asc" },
       },
     },
@@ -41,6 +48,13 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         images: p.images,
         basePrice: p.basePrice,
         tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+        variants: p.variants.map((v) => ({
+          id: v.id,
+          name: v.name,
+          colorHex: v.colorHex,
+          stock: v.stock,
+          images: v.images.map((img) => img.url),
+        })),
       }))}
     />
   );

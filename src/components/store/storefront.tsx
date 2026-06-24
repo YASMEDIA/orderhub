@@ -19,6 +19,13 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useToast } from "@/components/ui/toast";
 
+type Variant = {
+  id: string;
+  name: string;
+  colorHex: string;
+  stock: number;
+  images: string[];
+};
 type Product = {
   id: string;
   name: string;
@@ -26,6 +33,7 @@ type Product = {
   images?: string[];
   basePrice: number;
   tiers: { minQuantity: number; unitPrice: number }[];
+  variants: Variant[];
 };
 type ProjectInfo = {
   name: string;
@@ -51,10 +59,30 @@ type FormState = {
   paymentMethod: string;
 };
 
+// A cart line is keyed by product + variant so each colour is a separate item.
+const lineKey = (productId: string, variantId?: string | null) =>
+  variantId ? `${productId}::${variantId}` : productId;
+const parseKey = (key: string): { productId: string; variantId: string | null } => {
+  const [productId, variantId] = key.split("::");
+  return { productId, variantId: variantId ?? null };
+};
+const round3 = (n: number) => Number(n.toFixed(3));
+const variantStock = (v: Variant) => Math.max(0, v.stock);
+const productStock = (p: Product) => p.variants.reduce((s, v) => s + variantStock(v), 0);
+
 export function Storefront({ project, products }: { project: ProjectInfo; products: Product[] }) {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("products");
   const [qty, setQty] = useState<Record<string, number>>({});
+  // Which variant swatch is active per product on the product card.
+  const [selected, setSelected] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const p of products) {
+      const first = p.variants.find((v) => variantStock(v) > 0) ?? p.variants[0];
+      if (first) init[p.id] = first.id;
+    }
+    return init;
+  });
   const [loading, setLoading] = useState(false);
   const [placed, setPlaced] = useState<{ orderNumber: string; publicId: string; paymentMethod: string } | null>(null);
   const [form, setForm] = useState<FormState>({
@@ -77,27 +105,42 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
   }, [step]);
 
   const set = (k: keyof FormState, v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const setQuantity = (id: string, q: number) => setQty((p) => ({ ...p, [id]: Math.max(0, q) }));
+  const setQuantity = (key: string, q: number) => setQty((p) => ({ ...p, [key]: Math.max(0, q) }));
   const areas = AREAS_BY_GOVERNORATE[form.governorate] ?? [];
 
-  const cart = useMemo(
-    () =>
-      products
-        .map((p) => ({ p, q: qty[p.id] || 0 }))
-        .filter((x) => x.q > 0)
-        .map((x) => {
-          const unit = priceForQuantity(x.p.basePrice, x.p.tiers, x.q);
-          return { ...x, unit, line: Number((unit * x.q).toFixed(3)) };
-        }),
-    [products, qty],
-  );
-  const subtotal = useMemo(() => Number(cart.reduce((s, x) => s + x.line, 0).toFixed(3)), [cart]);
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  // Resolve selected quantities into priced cart lines. Tier pricing uses the
+  // TOTAL quantity across all of a product's variants, applied to every unit.
+  const cart = useMemo(() => {
+    const lines = Object.entries(qty)
+      .filter(([, q]) => q > 0)
+      .map(([key, q]) => {
+        const { productId, variantId } = parseKey(key);
+        const p = productById.get(productId);
+        if (!p) return null;
+        const variant = variantId ? p.variants.find((v) => v.id === variantId) ?? null : null;
+        if (variantId && !variant) return null;
+        return { key, p, variant, q };
+      })
+      .filter((x): x is { key: string; p: Product; variant: Variant | null; q: number } => x !== null);
+
+    const totalByProduct = new Map<string, number>();
+    for (const l of lines) totalByProduct.set(l.p.id, (totalByProduct.get(l.p.id) ?? 0) + l.q);
+
+    return lines.map((l) => {
+      const unit = priceForQuantity(l.p.basePrice, l.p.tiers, totalByProduct.get(l.p.id) ?? l.q);
+      return { ...l, unit, line: round3(unit * l.q) };
+    });
+  }, [qty, productById]);
+
+  const subtotal = useMemo(() => round3(cart.reduce((s, x) => s + x.line, 0)), [cart]);
   const count = cart.reduce((s, x) => s + x.q, 0);
   const deliveryFee = useMemo(
     () => (cart.length ? deliveryFeeFor(form.governorate, form.area, subtotal) : 0),
     [cart.length, form.governorate, form.area, subtotal],
   );
-  const grandTotal = useMemo(() => Number((subtotal + deliveryFee).toFixed(3)), [subtotal, deliveryFee]);
+  const grandTotal = useMemo(() => round3(subtotal + deliveryFee), [subtotal, deliveryFee]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -112,7 +155,7 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
     setLoading(true);
     const res = await placePublicOrder(project.slug, {
       ...form,
-      items: cart.map((x) => ({ productId: x.p.id, quantity: x.q })),
+      items: cart.map((x) => ({ productId: x.p.id, variantId: x.variant?.id, quantity: x.q })),
     });
     setLoading(false);
     if (!res.ok) {
@@ -203,47 +246,16 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
           {products.length === 0 ? (
             <p className="text-sm text-muted-foreground">No products available right now.</p>
           ) : (
-            products.map((p) => {
-              const q = qty[p.id] || 0;
-              return (
-                <div key={p.id} className="overflow-hidden rounded-lg border">
-                  {p.images && p.images.length > 0 ? (
-                    <div className="flex snap-x gap-2 overflow-x-auto p-2">
-                      {p.images.map((img, i) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={i} src={img} alt={p.name} className="h-32 w-32 shrink-0 snap-start rounded-md border object-cover" />
-                      ))}
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-3 p-3">
-                    <div className="min-w-0">
-                      <p className="font-medium">{p.name}</p>
-                      {p.description ? (
-                        <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-                      ) : null}
-                      <p className="mt-0.5 text-sm font-semibold">
-                        {formatAmount(p.basePrice)} {CURRENCY}
-                      </p>
-                    </div>
-                    {q > 0 ? (
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-6 text-center font-semibold">{q}</span>
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q + 1)}>
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button type="button" variant="secondary" className="shrink-0" onClick={() => setQuantity(p.id, 1)}>
-                        <Plus className="h-4 w-4" /> Add
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            products.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                selectedVariantId={selected[p.id]}
+                onSelectVariant={(vid) => setSelected((s) => ({ ...s, [p.id]: vid }))}
+                qty={qty}
+                setQuantity={setQuantity}
+              />
+            ))
           )}
 
           {/* Sticky: view cart */}
@@ -266,36 +278,46 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
             </div>
           ) : (
             <>
-              {cart.map(({ p, q, unit, line }) => (
-                <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    {p.images?.[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.images[0]} alt={p.name} className="h-12 w-12 shrink-0 rounded border object-cover" />
-                    ) : null}
-                    <div className="min-w-0">
-                      <p className="font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
-                      <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
+              {cart.map(({ key, p, variant, q, unit, line }) => {
+                const img = variant?.images?.[0] ?? p.images?.[0];
+                const cap = variant ? variantStock(variant) : Infinity;
+                return (
+                  <div key={key} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {img ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={img} alt={p.name} className="h-12 w-12 shrink-0 rounded border object-cover" />
+                      ) : null}
+                      <div className="min-w-0">
+                        <p className="font-medium">{p.name}</p>
+                        {variant ? (
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: variant.colorHex }} />
+                            {variant.name}
+                          </p>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
+                        <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {q === 1 ? (
+                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, 0)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      ) : (
+                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, q - 1)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <span className="w-6 text-center font-semibold">{q}</span>
+                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" disabled={q >= cap} onClick={() => setQuantity(key, q + 1)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {q === 1 ? (
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, 0)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    ) : (
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q - 1)}>
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <span className="w-6 text-center font-semibold">{q}</span>
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(p.id, q + 1)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <button type="button" onClick={() => setStep("products")} className="text-sm text-primary hover:underline">
                 + Add more products
               </button>
@@ -383,9 +405,11 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
 
           {/* Order summary */}
           <section className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            {cart.map(({ p, q, line }) => (
-              <div key={p.id} className="flex justify-between">
-                <span className="text-muted-foreground">{q} × {p.name}</span>
+            {cart.map(({ key, p, variant, q, line }) => (
+              <div key={key} className="flex justify-between">
+                <span className="text-muted-foreground">
+                  {q} × {p.name}{variant ? ` — ${variant.name}` : ""}
+                </span>
                 <span>{formatAmount(line)}</span>
               </div>
             ))}
@@ -410,6 +434,111 @@ export function Storefront({ project, products }: { project: ProjectInfo; produc
           </div>
         </form>
       )}
+    </div>
+  );
+}
+
+// One storefront product. For products with variants, selecting a colour swaps
+// the images, shows that colour's stock, and adds it to the cart as its own line.
+function ProductCard({
+  product: p,
+  selectedVariantId,
+  onSelectVariant,
+  qty,
+  setQuantity,
+}: {
+  product: Product;
+  selectedVariantId?: string;
+  onSelectVariant: (variantId: string) => void;
+  qty: Record<string, number>;
+  setQuantity: (key: string, q: number) => void;
+}) {
+  const hasVariants = p.variants.length > 0;
+  const variant = hasVariants
+    ? p.variants.find((v) => v.id === selectedVariantId) ?? p.variants[0]
+    : null;
+
+  const images = (variant?.images?.length ? variant.images : p.images) ?? [];
+  const key = lineKey(p.id, variant?.id);
+  const q = qty[key] || 0;
+  const stock = hasVariants ? (variant ? variantStock(variant) : 0) : Infinity;
+  const totalStock = hasVariants ? productStock(p) : null;
+  const soldOut = hasVariants && stock <= 0;
+
+  return (
+    <div className="overflow-hidden rounded-lg border">
+      {images.length > 0 ? (
+        <div className="flex snap-x gap-2 overflow-x-auto p-2">
+          {images.map((img, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={`${variant?.id ?? "base"}-${i}`} src={img} alt={p.name} className="h-32 w-32 shrink-0 snap-start rounded-md border object-cover" />
+          ))}
+        </div>
+      ) : null}
+
+      <div className="space-y-3 p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-medium">{p.name}</p>
+            {p.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p> : null}
+            <p className="mt-0.5 text-sm font-semibold">{formatAmount(p.basePrice)} {CURRENCY}</p>
+          </div>
+          {totalStock !== null ? (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+              {totalStock} available
+            </span>
+          ) : null}
+        </div>
+
+        {hasVariants ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {p.variants.map((v) => {
+                const isSel = v.id === variant?.id;
+                const vOut = variantStock(v) <= 0;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => onSelectVariant(v.id)}
+                    title={`${v.name}${vOut ? " · sold out" : ` · ${variantStock(v)} left`}`}
+                    className={`relative h-8 w-8 rounded-full ring-2 ring-offset-2 ring-offset-background transition ${isSel ? "ring-primary" : "ring-border"}`}
+                    style={{ backgroundColor: v.colorHex }}
+                    aria-label={v.name}
+                  >
+                    {vOut ? <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow">✕</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+            {variant ? (
+              <p className="text-xs text-muted-foreground">
+                Selected: <span className="font-medium text-foreground">{variant.name}</span>
+                {" · "}
+                {soldOut ? <span className="text-destructive">Out of stock</span> : `${stock} in stock`}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="flex items-center justify-end">
+          {q > 0 ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, q - 1)}>
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="w-6 text-center font-semibold">{q}</span>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9" disabled={q >= stock} onClick={() => setQuantity(key, q + 1)}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" variant="secondary" className="shrink-0" disabled={soldOut} onClick={() => setQuantity(key, 1)}>
+              <Plus className="h-4 w-4" /> {soldOut ? "Sold out" : "Add"}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

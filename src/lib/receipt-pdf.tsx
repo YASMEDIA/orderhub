@@ -19,7 +19,7 @@ export type ReceiptData = {
   orderDate: Date | string;
   deliveryDate: Date | string;
   paymentMethod: string; // already-localized label, e.g. "Online Payment" / "Cash"
-  items: { productName: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { productName: string; variantName?: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
   deliveryFee: number;
   subtotal: number;
   grandTotal: number;
@@ -103,7 +103,7 @@ function ReceiptDoc(d: ReceiptData) {
         </View>
         {d.items.map((it, i) => (
           <View key={i} style={styles.itemRow}>
-            <Text style={styles.cName}>{it.productName}</Text>
+            <Text style={styles.cName}>{it.productName}{it.variantName ? ` (${it.variantName})` : ""}</Text>
             <Text style={styles.cQty}>{it.quantity}</Text>
             <Text style={styles.cPrice}>{formatAmount(it.unitPrice)}</Text>
             <Text style={styles.cTotal}>{formatAmount(it.lineTotal)}</Text>
@@ -111,6 +111,11 @@ function ReceiptDoc(d: ReceiptData) {
         ))}
 
         <View style={styles.hr} />
+
+        <View style={styles.row}>
+          <Text>Total Quantity</Text>
+          <Text>{d.items.reduce((s, it) => s + it.quantity, 0)}</Text>
+        </View>
 
         <View style={styles.row}>
           <Text>Subtotal</Text>
