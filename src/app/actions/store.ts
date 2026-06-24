@@ -42,6 +42,10 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
         slug: data.slug ?? null,
         storeEnabled: data.storeEnabled,
         logoUrl: data.logoUrl || null,
+        instagram: data.instagram ?? null,
+        tiktok: data.tiktok ?? null,
+        whatsapp: data.whatsapp ?? null,
+        phone: data.phone ?? null,
       },
     });
     await logActivity({ userId: user.id, action: "Update Store Settings", projectId });

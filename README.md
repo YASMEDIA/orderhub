@@ -1,4 +1,4 @@
-# OrderHub
+# Mahalatly
 
 A production-ready, multi-tenant SaaS platform for managing delivery orders and generating **80mm thermal receipt** invoices for multiple businesses from a single dashboard.
 
@@ -62,8 +62,8 @@ npm run dev
 Open http://localhost:3000 and sign in with the seeded Super Admin.
 
 Seeded accounts:
-- **Super Admin:** `admin@orderhub.com` / `Admin@12345`
-- **Employee:** `employee@orderhub.com` / `Employee@123`
+- **Super Admin:** `admin@mahalatly.com` / `Admin@12345`
+- **Employee:** `employee@mahalatly.com` / `Employee@123`
 
 > Change these immediately in any real deployment.
 
@@ -94,10 +94,10 @@ docker compose up --build
 ```
 
 Then open http://localhost:3000 and sign in with the seeded Super Admin
-(`admin@orderhub.com` / `Admin@12345`).
+(`admin@mahalatly.com` / `Admin@12345`).
 
 - The `app` container waits for Postgres, runs `prisma migrate deploy`, and (when `SEED_ON_START=true`, the default) seeds idempotently.
-- Postgres data persists in the `orderhub-pgdata` volume across restarts.
+- Postgres data persists in the `mahalatly-pgdata` volume across restarts.
 - Override any value via env vars (`NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ON_START=false`).
 
 To stop and wipe the database:
@@ -107,43 +107,43 @@ docker compose down -v
 
 ---
 
-## Deployment (Vercel + managed Postgres)
+## Deployment (Vercel + Neon)
 
-1. **Database** — Provision Postgres (Vercel Postgres, Neon, Supabase, or RDS). Copy the connection string.
-2. **Push to Git** and import the repo into Vercel.
+The app runs on **Vercel** with a **Neon** Postgres database.
+
+1. **Database (Neon):** create a project and grab two connection strings — the **pooled** one (for runtime) and the **direct** one (for migrations). Both with `?sslmode=require`.
+2. **Import the repo into Vercel** (Vercel auto-detects Next.js and runs the `build` script).
 3. **Environment variables** (Vercel → Settings → Environment Variables):
-   - `DATABASE_URL`
-   - `NEXTAUTH_SECRET`
-   - `NEXTAUTH_URL` = your production URL (e.g. `https://orderhub.example.com`)
-   - `NEXT_PUBLIC_APP_URL` = same production URL (used to build invoice/QR links)
-4. **Build** — `npm run build` runs `prisma generate` automatically.
-5. **Run migrations against production** once:
-   ```bash
-   DATABASE_URL="<prod-url>" npm run db:deploy
-   DATABASE_URL="<prod-url>" SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... npm run db:seed
-   ```
-6. Visit your URL and sign in.
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | Neon **pooled** URL |
+   | `DIRECT_URL` | Neon **direct** URL (used by migrations) |
+   | `NEXTAUTH_URL` | the domain you log in on (e.g. `https://dashboard.mahalatly.com`) |
+   | `NEXT_PUBLIC_APP_URL` | the public base for store/invoice/QR links (e.g. `https://mahalatly.com`) |
+   | `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+   | `RESEND_API_KEY` / `RESEND_FROM` | Resend key + verified sender |
+   | `INVOICE_NOTIFY_EMAIL` | where order emails go |
+   | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | first Super Admin |
+4. **Custom domains** (Vercel → Settings → Domains): add the dashboard subdomain and (to serve `/store/...`) the apex domain — both pointing at this project.
+5. **Deploy.** On a **production** build, `scripts/vercel-build.sh` runs `prisma migrate deploy` + the seed automatically, so the schema and first Super Admin are created with no manual step. Preview/CI builds only build.
+6. Open your dashboard domain and sign in.
 
 ### Notes for serverless
-- `@react-pdf/renderer` and `bcryptjs` are declared in `serverExternalPackages` so they run correctly in Node server functions.
-- The in-memory rate limiter resets per instance. For multi-instance scale, back it with Redis (swap `src/lib/rate-limit.ts`).
-- Password reset currently returns/links the token for demo purposes. Wire `src/app/actions/auth.ts` to an email provider (Resend, SES, etc.) before production.
+- `@react-pdf/renderer`, `bcryptjs`, and `pngjs` are in `serverExternalPackages` so they run correctly in serverless functions.
+- The in-memory rate limiter resets per instance. For scale, back it with Redis (swap `src/lib/rate-limit.ts`).
 
 ---
 
-## Migrating the database (e.g. Render → Neon)
+## Backup & restore (and changing database providers)
 
 No DB tools required — do it from the dashboard:
 
-1. **Back up the old DB:** in the running app, **Settings → Download full backup (JSON)**. Keep the file.
-2. **Create the new DB** (Neon): copy its **direct** connection string (Neon → Connection Details → uncheck "Pooled connection"), ensure it ends with `?sslmode=require`.
-3. **Point the app at the new DB:** set `DATABASE_URL` to the Neon string and redeploy. On boot the app runs `prisma migrate deploy` (creates the schema on Neon) and seeds a Super Admin — so you can log in (`admin@orderhub.com` / your `SEED_ADMIN_PASSWORD`).
-4. **Restore the data:** **Settings → Restore / Migrate → choose the backup file → "Replace all data with this backup"**. This wipes the fresh Neon data and loads your real data (including users, passwords, project assignments, orders). You'll be signed out — log back in with your original credentials.
-5. Verify, then decommission the old database.
+1. **Back up:** **Settings → Download full backup (JSON)**. Keep the file safe.
+2. **Restore / migrate:** point the app at the target database (set `DATABASE_URL`/`DIRECT_URL` and redeploy — the production build creates the schema and a bootstrap Super Admin), then **Settings → Restore / Migrate → choose the backup → "Replace all data with this backup"**. This loads your real data (users, passwords, project assignments, orders). You'll be signed out — log back in with your original credentials.
 
-> Notes: use Neon's **direct** (non-pooled) URL so startup migrations work on a single Render instance. Prefer to migrate during a quiet moment — orders placed between steps 1 and 4 on the old DB won't be in the backup.
+> Tip: prefer a quiet moment — orders placed between backup and restore won't be in the file.
 
-Prefer the CLI? `DATABASE_URL=<neon> npx prisma migrate deploy` then `DATABASE_URL=<neon> npm run db:restore -- backup.json` (needs Node + the repo).
+Prefer the CLI? `DATABASE_URL=<url> DIRECT_URL=<direct-url> npx prisma migrate deploy` then `DATABASE_URL=<url> npm run db:restore -- backup.json` (needs Node + the repo).
 
 ---
 

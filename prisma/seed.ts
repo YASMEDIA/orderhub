@@ -12,10 +12,10 @@ const DEMO_PROJECT_IDS = [
   "seed-project-q8-florist",
   "seed-project-desert-roast",
 ];
-const DEMO_USER_EMAILS = ["employee@orderhub.com", "manager@orderhub.com"];
+const DEMO_USER_EMAILS = ["employee@mahalatly.com", "manager@mahalatly.com"];
 
 async function main() {
-  const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@orderhub.com").toLowerCase();
+  const email = (process.env.SEED_ADMIN_EMAIL ?? "admin@mahalatly.com").toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD ?? "Admin@12345";
 
   // Global platform settings.

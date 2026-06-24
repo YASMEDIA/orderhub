@@ -150,10 +150,10 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     });
 
     await logActivity({ action: "Online Order", detail: order.orderNumber, projectId: project.id });
-    // Fire-and-forget: don't make the customer wait on SMTP. The order is
-    // already committed; the email sends in the background on this persistent
-    // Node server. (Awaiting Gmail SMTP here was hanging the storefront.)
-    void sendOrderInvoiceEmail(order.id).catch((e) => console.error("invoice email failed", e));
+    // Awaited so it actually runs on serverless (Vercel kills background work
+    // after the response). Resend is fast and sendOrderInvoiceEmail never
+    // throws, so this won't hang or break the order.
+    await sendOrderInvoiceEmail(order.id);
     return { ok: true, publicId: order.publicId, orderNumber: order.orderNumber };
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("OUT_OF_STOCK:")) {

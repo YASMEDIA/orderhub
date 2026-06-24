@@ -1,4 +1,4 @@
-// OrderHub — Prisma schema
+// Mahalatly — Prisma schema
 // PostgreSQL relational model for multi-tenant delivery order management.
 
 generator client {
@@ -6,8 +6,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime queries use the pooled connection (good for serverless / Neon).
+  url       = env("DATABASE_URL")
+  // Migrations use a direct (non-pooled) connection. DIRECT_URL is optional:
+  // the Vercel build script falls back to Neon's direct URL (DATABASE_URL_UNPOOLED
+  // / POSTGRES_URL_NON_POOLING) or to DATABASE_URL when it isn't set by hand.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -80,6 +85,7 @@ model Project {
   website     String?
   instagram   String?
   tiktok      String?
+  whatsapp    String?
   status      ProjectStatus       @default(ACTIVE)
   slug         String?            @unique // public storefront URL: /store/:slug
   logoUrl      String?

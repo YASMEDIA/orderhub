@@ -74,10 +74,10 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
     });
     revalidatePath("/dashboard/orders");
     revalidatePath("/dashboard");
-    // Fire-and-forget: don't make the dashboard wait on SMTP. The order is
-    // already committed; the email sends in the background on this persistent
-    // Node server. (Awaiting Gmail SMTP here was hanging New Order.)
-    void sendOrderInvoiceEmail(order.id).catch((e) => console.error("invoice email failed", e));
+    // Awaited so it actually runs on serverless (Vercel kills background work
+    // after the response). Resend is fast and sendOrderInvoiceEmail never
+    // throws, so this won't hang or break order creation.
+    await sendOrderInvoiceEmail(order.id);
     return { ok: true, message: "Order created", orderId: order.id, publicId: order.publicId };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };

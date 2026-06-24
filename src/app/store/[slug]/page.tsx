@@ -12,7 +12,16 @@ function normalizeSlug(slug: string): string {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const project = await prisma.project.findUnique({ where: { slug: normalizeSlug(slug) } });
-  return { title: project ? `${project.name} — Order Online` : "Store" };
+  if (!project) return { title: "Store" };
+  return {
+    title: `${project.name} — Order Online`,
+    // Use the store's own logo as the browser-tab favicon (and the icon shown
+    // when a customer saves the store to their home screen). Falls back to the
+    // app default when no logo is set.
+    icons: project.logoUrl
+      ? { icon: project.logoUrl, shortcut: project.logoUrl, apple: project.logoUrl }
+      : undefined,
+  };
 }
 
 export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -40,7 +49,15 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
   return (
     <Storefront
-      project={{ name: project.name, slug: project.slug!, logoUrl: project.logoUrl, phone: project.phone }}
+      project={{
+        name: project.name,
+        slug: project.slug!,
+        logoUrl: project.logoUrl,
+        phone: project.phone,
+        instagram: project.instagram,
+        tiktok: project.tiktok,
+        whatsapp: project.whatsapp,
+      }}
       products={project.products.map((p) => ({
         id: p.id,
         name: p.name,
