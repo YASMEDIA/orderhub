@@ -41,6 +41,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
       data: {
         slug: data.slug ?? null,
         storeEnabled: data.storeEnabled,
+        showStock: data.showStock,
         logoUrl: data.logoUrl || null,
         instagram: data.instagram ?? null,
         tiktok: data.tiktok ?? null,

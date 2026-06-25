@@ -49,6 +49,7 @@ type ProjectInfo = {
   instagram?: string | null;
   tiktok?: string | null;
   whatsapp?: string | null;
+  showStock?: boolean;
 };
 
 // Brand glyphs lucide-react doesn't ship. Monochrome (currentColor) to match
@@ -324,6 +325,7 @@ export function Storefront({
               <ProductCard
                 key={p.id}
                 product={p}
+                showStock={project.showStock !== false}
                 selectedVariantId={selected[p.id]}
                 onSelectVariant={(vid) => setSelected((s) => ({ ...s, [p.id]: vid }))}
                 qty={qty}
@@ -520,12 +522,14 @@ export function Storefront({
 // the images, shows that colour's stock, and adds it to the cart as its own line.
 function ProductCard({
   product: p,
+  showStock,
   selectedVariantId,
   onSelectVariant,
   qty,
   setQuantity,
 }: {
   product: Product;
+  showStock: boolean;
   selectedVariantId?: string;
   onSelectVariant: (variantId: string) => void;
   qty: Record<string, number>;
@@ -561,7 +565,7 @@ function ProductCard({
             {p.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p> : null}
             <p className="mt-0.5 text-sm font-semibold">{formatAmount(p.basePrice)} {CURRENCY}</p>
           </div>
-          {totalStock !== null ? (
+          {showStock && totalStock !== null ? (
             <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
               {totalStock} available
             </span>
@@ -579,7 +583,7 @@ function ProductCard({
                     key={v.id}
                     type="button"
                     onClick={() => onSelectVariant(v.id)}
-                    title={`${v.name}${vOut ? " · sold out" : ` · ${variantStock(v)} left`}`}
+                    title={`${v.name}${vOut ? " · sold out" : showStock ? ` · ${variantStock(v)} left` : ""}`}
                     className={`relative h-8 w-8 rounded-full ring-2 ring-offset-2 ring-offset-background transition ${isSel ? "ring-primary" : "ring-border"}`}
                     style={{ backgroundColor: v.colorHex }}
                     aria-label={v.name}
@@ -592,8 +596,11 @@ function ProductCard({
             {variant ? (
               <p className="text-xs text-muted-foreground">
                 Selected: <span className="font-medium text-foreground">{variant.name}</span>
-                {" · "}
-                {soldOut ? <span className="text-destructive">Out of stock</span> : `${stock} in stock`}
+                {soldOut ? (
+                  <> · <span className="text-destructive">Out of stock</span></>
+                ) : showStock ? (
+                  ` · ${stock} in stock`
+                ) : null}
               </p>
             ) : null}
           </div>

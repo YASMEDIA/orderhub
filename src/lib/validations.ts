@@ -131,6 +131,7 @@ export const storeSettingsSchema = z.object({
     .optional()
     .or(z.literal("").transform(() => undefined)),
   storeEnabled: z.coerce.boolean().default(false),
+  showStock: z.coerce.boolean().default(true),
   logoUrl: z.string().trim().default(""),
   // Contact / social shown under the store name. All optional; a username,
   // full URL or phone number is accepted and turned into a link on display.

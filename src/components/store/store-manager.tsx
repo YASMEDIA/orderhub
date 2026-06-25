@@ -17,6 +17,7 @@ type ProjectRow = {
   slug: string | null;
   logoUrl: string | null;
   storeEnabled: boolean;
+  showStock: boolean;
   instagram: string | null;
   tiktok: string | null;
   whatsapp: string | null;
@@ -58,6 +59,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   const [slug, setSlug] = useState(project.slug ?? "");
   const [logo, setLogo] = useState(project.logoUrl ?? "");
   const [enabled, setEnabled] = useState(project.storeEnabled);
+  const [showStock, setShowStock] = useState(project.showStock);
   const [instagram, setInstagram] = useState(project.instagram ?? "");
   const [tiktok, setTiktok] = useState(project.tiktok ?? "");
   const [whatsapp, setWhatsapp] = useState(project.whatsapp ?? "");
@@ -89,6 +91,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
       const res = await updateStoreSettings(project.id, {
         slug,
         storeEnabled: enabled,
+        showStock,
         logoUrl: logo,
         instagram,
         tiktok,
@@ -133,10 +136,14 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
             <Label>Store Link (slug)</Label>
             <Input value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} placeholder="e.g. 313-boutique" />
           </div>
-          <div className="flex items-end pb-2">
+          <div className="flex flex-col justify-end gap-2 pb-2">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
               Store is live (public)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={showStock} onChange={(e) => setShowStock(e.target.checked)} />
+              Show available quantity to customers
             </label>
           </div>
         </div>
