@@ -88,10 +88,22 @@ async function syncVariants(
   }
 }
 
+// Server Action arguments can't contain deeply-nested arrays — variant images
+// inside variants[] hit React's "Maximum array nesting exceeded" guard. The
+// client therefore sends the payload as a JSON string; accept either for safety.
+function parseInput(input: unknown): unknown {
+  if (typeof input !== "string") return input;
+  try {
+    return JSON.parse(input);
+  } catch {
+    return null;
+  }
+}
+
 export async function createProduct(input: unknown): Promise<ProductActionResult> {
   try {
     const user = await requireRole("SUPER_ADMIN", "ADMIN");
-    const parsed = productSchema.safeParse(input);
+    const parsed = productSchema.safeParse(parseInput(input));
     if (!parsed.success) return { ok: false, message: parsed.error.errors[0]?.message ?? "Invalid input" };
     const data = parsed.data;
     await assertProjectAccess(user, data.projectId);
@@ -128,7 +140,7 @@ export async function updateProduct(id: string, input: unknown): Promise<Product
     if (!existing) return { ok: false, message: "Product not found" };
     await assertProjectAccess(user, existing.projectId);
 
-    const parsed = productSchema.safeParse(input);
+    const parsed = productSchema.safeParse(parseInput(input));
     if (!parsed.success) return { ok: false, message: parsed.error.errors[0]?.message ?? "Invalid input" };
     const data = parsed.data;
     await assertProjectAccess(user, data.projectId);
