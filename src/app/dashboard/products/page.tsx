@@ -24,6 +24,14 @@ export default async function ProductsPage() {
     getAccessibleProjects(),
   ]);
 
+  // Pass variant images as a flat map (variantId -> urls) rather than nested
+  // inside products[].variants[].images — three levels of nested arrays of large
+  // base64 strings exceed React's RSC serialization nesting limit.
+  const variantImages: Record<string, string[]> = {};
+  for (const p of products) {
+    for (const v of p.variants) variantImages[v.id] = v.images.map((img) => img.url);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -53,9 +61,9 @@ export default async function ProductsPage() {
               sku: v.sku,
               stock: v.stock,
               isActive: v.isActive,
-              images: v.images.map((img) => img.url),
             })),
           }))}
+          variantImages={variantImages}
           projects={projects.map((p) => ({ id: p.id, name: p.name }))}
         />
       )}
