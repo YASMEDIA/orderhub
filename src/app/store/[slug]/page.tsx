@@ -64,6 +64,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         instagram: project.instagram,
         tiktok: project.tiktok,
         whatsapp: project.whatsapp,
+        showStock: project.showStock,
       }}
       variantImages={variantImages}
       products={project.products.map((p) => ({

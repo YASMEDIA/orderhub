@@ -90,6 +90,7 @@ model Project {
   slug         String?            @unique // public storefront URL: /store/:slug
   logoUrl      String?
   storeEnabled Boolean            @default(false)
+  showStock    Boolean            @default(true) // show available quantity to customers on the storefront
   assignments ProjectAssignment[]
   orders      Order[]
   products    Product[]

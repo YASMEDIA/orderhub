@@ -24,6 +24,7 @@ export default async function StorePage() {
           slug: p.slug,
           logoUrl: p.logoUrl,
           storeEnabled: p.storeEnabled,
+          showStock: p.showStock,
           instagram: p.instagram,
           tiktok: p.tiktok,
           whatsapp: p.whatsapp,
