@@ -128,8 +128,11 @@ export function ProductsManager({
           images: v.images,
         })),
     };
+    // Send as a JSON string: variant image arrays are too deeply nested for
+    // Server Action argument serialization ("Maximum array nesting exceeded").
+    const serialized = JSON.stringify(payload);
     startTransition(async () => {
-      const res = editing ? await updateProduct(editing.id, payload) : await createProduct(payload);
+      const res = editing ? await updateProduct(editing.id, serialized) : await createProduct(serialized);
       toast({ title: res.ok ? "Saved" : "Error", description: res.ok ? undefined : res.message, variant: res.ok ? "default" : "destructive" });
       if (res.ok) {
         setOpen(false);
