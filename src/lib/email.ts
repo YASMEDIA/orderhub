@@ -182,3 +182,45 @@ export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
     console.error(`[email] failed to send invoice email for order ${orderId}`, err);
   }
 }
+
+// Emails a password-reset link to a single user (the person who requested it),
+// from the configured sender. Returns whether it was actually sent. Never throws.
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
+  try {
+    const resend = getResend();
+    const transporter = resend ? null : getTransporter();
+    if (!resend && !transporter) {
+      console.warn("[email] no provider configured (set RESEND_API_KEY or SMTP_*); skipping password reset email");
+      return false;
+    }
+
+    const subject = "Reset your Mahalatly password";
+    const safeUrl = escapeHtml(resetUrl);
+    const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#111">
+      <h2 style="margin:0 0 8px">Reset your password</h2>
+      <p style="color:#555;margin:0 0 16px">We received a request to reset your Mahalatly password. This link is valid for 1 hour.</p>
+      <p style="margin:0 0 20px">
+        <a href="${safeUrl}" style="display:inline-block;background:#0c023c;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold">Reset password</a>
+      </p>
+      <p style="color:#777;font-size:12px;margin:0 0 4px">Or paste this link into your browser:</p>
+      <p style="font-size:12px;word-break:break-all;margin:0 0 16px"><a href="${safeUrl}" style="color:#2563eb">${safeUrl}</a></p>
+      <p style="color:#777;font-size:12px;margin:0">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+    </div>`;
+
+    if (resend) {
+      const { error } = await resend.emails.send({ from: resendFrom(), to, subject, html });
+      if (error) {
+        console.error("[email] Resend password reset error:", error);
+        return false;
+      }
+      return true;
+    }
+    const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER!;
+    await transporter!.sendMail({ from, to, subject, html });
+    return true;
+  } catch (err) {
+    console.error("[email] failed to send password reset email", err);
+    return false;
+  }
+}

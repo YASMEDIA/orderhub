@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
     <Card>
       <CardHeader>
         <CardTitle>Forgot password</CardTitle>
-        <CardDescription>We&apos;ll generate a reset link for your account.</CardDescription>
+        <CardDescription>We&apos;ll email a reset link to your account.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
           {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
           {resetLink ? (
             <div className="rounded-md border bg-muted/50 p-3 text-xs break-all">
-              <p className="mb-1 font-medium">Demo reset link (would be emailed in production):</p>
+              <p className="mb-1 font-medium">Local dev link (no email provider configured):</p>
               <Link href={resetLink} className="text-primary underline">
                 {resetLink}
               </Link>
