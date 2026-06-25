@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/toast";
 import { formatAmount } from "@/lib/format";
 import { CURRENCY } from "@/lib/constants";
 import { VariantsEditor, type VariantDraft } from "@/components/store/variants-editor";
+import { compressImage } from "@/lib/image-compress";
 
 type ProjectRow = {
   id: string;
@@ -99,16 +100,17 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   ).replace(/\/$/, "");
   const storeUrl = slug ? `${publicBase}/store/${slug}` : "";
 
-  function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 500_000) {
-      toast({ title: "Image too large", description: "Logo must be under 500KB.", variant: "destructive" });
-      return;
+    try {
+      // Logos are small + may have transparency — keep dimensions modest.
+      const dataUrl = await compressImage(file, { maxDim: 512, maxBytes: 150_000 });
+      setLogo(dataUrl);
+    } catch {
+      toast({ title: "Couldn't read that image", description: "Please try another file.", variant: "destructive" });
     }
-    const reader = new FileReader();
-    reader.onload = () => setLogo(String(reader.result));
-    reader.readAsDataURL(file);
   }
 
   function save() {
@@ -151,7 +153,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
             {logo ? (
               <Button type="button" variant="ghost" size="sm" onClick={() => setLogo("")}>Remove logo</Button>
             ) : null}
-            <p className="text-xs text-muted-foreground">PNG/JPG/WebP, up to 500KB.</p>
+            <p className="text-xs text-muted-foreground">PNG/JPG/WebP — any size, optimized automatically.</p>
           </div>
         </div>
 
@@ -244,19 +246,14 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
     setOpen(true);
   }
 
-  function onImagesFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
+  async function onImagesFile(e: React.ChangeEvent<HTMLInputElement>) {
     const room = 4 - images.length;
-    files.slice(0, room).forEach((file) => {
-      if (file.size > 500_000) {
-        toast({ title: "Image too large", description: `${file.name} is over 500KB.`, variant: "destructive" });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => setImages((prev) => (prev.length < 4 ? [...prev, String(reader.result)] : prev));
-      reader.readAsDataURL(file);
-    });
+    const picked = Array.from(e.target.files ?? []).slice(0, room);
     e.target.value = "";
+    // Any size is fine — each image is downscaled + compressed in the browser.
+    const compressed = await Promise.all(picked.map((f) => compressImage(f).catch(() => null)));
+    const valid = compressed.filter((x): x is string => !!x);
+    if (valid.length) setImages((prev) => [...prev, ...valid].slice(0, 4));
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -411,7 +408,7 @@ function StoreProductsCard({ projectId, products }: { projectId: string; product
                   </label>
                 ) : null}
               </div>
-              <p className="text-xs text-muted-foreground">PNG/JPG/WebP, up to 500KB each.</p>
+              <p className="text-xs text-muted-foreground">PNG/JPG/WebP — any size, optimized automatically.</p>
             </div>
             <div className="space-y-2">
               <Label>Base Price ({CURRENCY}) — unit price for quantity 1+</Label>

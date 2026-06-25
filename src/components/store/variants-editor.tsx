@@ -4,7 +4,7 @@ import { Plus, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/toast";
+import { compressImage } from "@/lib/image-compress";
 
 // A draft variant being edited in the product dialog. `id` is present only for
 // variants that already exist in the database.
@@ -31,8 +31,6 @@ export function VariantsEditor({
   variants: VariantDraft[];
   onChange: (next: VariantDraft[]) => void;
 }) {
-  const { toast } = useToast();
-
   const update = (i: number, patch: Partial<VariantDraft>) =>
     onChange(variants.map((v, j) => (j === i ? { ...v, ...patch } : v)));
   const remove = (i: number) => onChange(variants.filter((_, j) => j !== i));
@@ -41,21 +39,9 @@ export function VariantsEditor({
   async function addImages(i: number, files: FileList | null) {
     const room = MAX_IMAGES - variants[i].images.length;
     const list = Array.from(files ?? []).slice(0, room);
-    const tooBig = list.find((f) => f.size > 500_000);
-    if (tooBig) {
-      toast({ title: "Image too large", description: `${tooBig.name} is over 500KB.`, variant: "destructive" });
-    }
-    const readable = list.filter((f) => f.size <= 500_000);
-    const dataUrls = await Promise.all(
-      readable.map(
-        (file) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result));
-            reader.readAsDataURL(file);
-          }),
-      ),
-    );
+    // Any size is fine — each image is downscaled + compressed in the browser.
+    const compressed = await Promise.all(list.map((f) => compressImage(f).catch(() => null)));
+    const dataUrls = compressed.filter((x): x is string => !!x);
     if (dataUrls.length) {
       onChange(
         variants.map((v, j) => (j === i ? { ...v, images: [...v.images, ...dataUrls].slice(0, MAX_IMAGES) } : v)),
