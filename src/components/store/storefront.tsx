@@ -37,6 +37,10 @@ type Product = {
   tiers: { minQuantity: number; unitPrice: number }[];
   variants: Variant[];
 };
+// Incoming props carry variants without images; images arrive via a flat
+// variantId -> urls map and are re-attached on the client (see below).
+type RawVariant = Omit<Variant, "images">;
+type RawProduct = Omit<Product, "variants"> & { variants: RawVariant[] };
 type ProjectInfo = {
   name: string;
   slug: string;
@@ -121,8 +125,26 @@ const round3 = (n: number) => Number(n.toFixed(3));
 const variantStock = (v: Variant) => Math.max(0, v.stock);
 const productStock = (p: Product) => p.variants.reduce((s, v) => s + variantStock(v), 0);
 
-export function Storefront({ project, products }: { project: ProjectInfo; products: Product[] }) {
+export function Storefront({
+  project,
+  products: rawProducts,
+  variantImages,
+}: {
+  project: ProjectInfo;
+  products: RawProduct[];
+  variantImages: Record<string, string[]>;
+}) {
   const { toast } = useToast();
+  // Re-attach each variant's images from the flat map (kept flat to avoid deep
+  // RSC array nesting across the server/client boundary).
+  const products = useMemo<Product[]>(
+    () =>
+      rawProducts.map((p) => ({
+        ...p,
+        variants: p.variants.map((v) => ({ ...v, images: variantImages[v.id] ?? [] })),
+      })),
+    [rawProducts, variantImages],
+  );
   const [step, setStep] = useState<Step>("products");
   const [qty, setQty] = useState<Record<string, number>>({});
   // Which variant swatch is active per product on the product card.

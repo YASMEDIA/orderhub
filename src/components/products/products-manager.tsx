@@ -26,7 +26,6 @@ type VariantRow = {
   sku: string | null;
   stock: number;
   isActive: boolean;
-  images: string[];
 };
 type ProductRow = {
   id: string;
@@ -44,9 +43,12 @@ type ProjectOption = { id: string; name: string };
 
 export function ProductsManager({
   products,
+  variantImages,
   projects,
 }: {
   products: ProductRow[];
+  // variantId -> image urls (kept flat to avoid deep RSC array nesting)
+  variantImages: Record<string, string[]>;
   projects: ProjectOption[];
 }) {
   const router = useRouter();
@@ -90,7 +92,7 @@ export function ProductsManager({
     setBasePrice(String(p.basePrice));
     setIsActive(p.isActive);
     setTiers(p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })));
-    setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, sku: v.sku ?? "", stock: v.stock, isActive: v.isActive, images: v.images })));
+    setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, sku: v.sku ?? "", stock: v.stock, isActive: v.isActive, images: variantImages[v.id] ?? [] })));
     setOpen(true);
   }
 

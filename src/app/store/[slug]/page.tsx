@@ -47,6 +47,13 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
   if (!project || !project.storeEnabled || project.status !== "ACTIVE") notFound();
 
+  // Flat variantId -> image urls map: nesting images inside products[].variants[]
+  // exceeds React's RSC array-nesting limit for large base64 strings.
+  const variantImages: Record<string, string[]> = {};
+  for (const p of project.products) {
+    for (const v of p.variants) variantImages[v.id] = v.images.map((img) => img.url);
+  }
+
   return (
     <Storefront
       project={{
@@ -58,6 +65,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         tiktok: project.tiktok,
         whatsapp: project.whatsapp,
       }}
+      variantImages={variantImages}
       products={project.products.map((p) => ({
         id: p.id,
         name: p.name,
@@ -70,7 +78,6 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           name: v.name,
           colorHex: v.colorHex,
           stock: v.stock,
-          images: v.images.map((img) => img.url),
         })),
       }))}
     />
