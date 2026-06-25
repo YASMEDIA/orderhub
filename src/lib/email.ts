@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { Resend } from "resend";
+import { prisma } from "@/lib/prisma";
 import { renderOrderReceiptPdf, type OrderWithDetails } from "@/lib/order-receipt";
 import { invoiceUrl } from "@/lib/qr";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -50,6 +51,25 @@ function getTransporter(): Transporter | null {
 
 function notifyEmail(): string {
   return process.env.INVOICE_NOTIFY_EMAIL?.trim() || DEFAULT_NOTIFY_EMAIL;
+}
+
+// Recipients for the new-order notification: every active user, pulled live
+// from the database so adding or removing a user updates the list with no
+// redeploy. De-duplicated and lowercased. Falls back to INVOICE_NOTIFY_EMAIL
+// when there are no active users (or the lookup fails) so a notification is
+// never silently dropped.
+async function notifyRecipients(): Promise<string[]> {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { email: true },
+    });
+    const emails = [...new Set(users.map((u) => u.email.trim().toLowerCase()).filter(Boolean))];
+    return emails.length ? emails : [notifyEmail()];
+  } catch (err) {
+    console.error("[email] failed to load notify recipients; using fallback", err);
+    return [notifyEmail()];
+  }
 }
 
 function buildHtml(order: OrderWithDetails): string {
@@ -133,7 +153,7 @@ export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
     }
     const { pdf, order } = result;
 
-    const to = notifyEmail();
+    const to = await notifyRecipients();
     const subject = `New order ${order.orderNumber} — ${order.project.name}`;
     const html = buildHtml(order);
     const filename = `${order.orderNumber}.pdf`;
