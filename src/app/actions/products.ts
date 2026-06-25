@@ -133,14 +133,22 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
   }
 }
 
-export async function updateProduct(id: string, input: unknown): Promise<ProductActionResult> {
+// Single argument (the id is folded into the JSON payload): a multi-arg Server
+// Action where one string arg exceeds ~1MB trips React's decode array-size
+// guard ("Maximum array nesting exceeded"). A lone string arg is never counted.
+export async function updateProduct(input: unknown): Promise<ProductActionResult> {
   try {
     const user = await requireRole("SUPER_ADMIN", "ADMIN");
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const raw = parseInput(input);
+    const id =
+      raw && typeof raw === "object" && typeof (raw as { id?: unknown }).id === "string"
+        ? (raw as { id: string }).id
+        : "";
+    const existing = id ? await prisma.product.findUnique({ where: { id } }) : null;
     if (!existing) return { ok: false, message: "Product not found" };
     await assertProjectAccess(user, existing.projectId);
 
-    const parsed = productSchema.safeParse(parseInput(input));
+    const parsed = productSchema.safeParse(raw); // unknown `id` key is ignored by the schema
     if (!parsed.success) return { ok: false, message: parsed.error.errors[0]?.message ?? "Invalid input" };
     const data = parsed.data;
     await assertProjectAccess(user, data.projectId);
