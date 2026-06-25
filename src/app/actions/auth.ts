@@ -6,10 +6,17 @@ import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations";
 import { logActivity } from "@/lib/activity";
 import { rateLimit } from "@/lib/rate-limit";
+import { appUrl } from "@/lib/qr";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export type ActionResult = { ok: boolean; message: string; token?: string };
 
-// Generates a reset token. In production, email this link instead of returning it.
+// Identical response whether or not the email exists, so the form can't be used
+// to discover which emails have accounts.
+const GENERIC_RESET_MESSAGE = "If that email has an account, a reset link has been sent to it.";
+
+// Emails a one-time reset link to the account owner. The token is NEVER returned
+// to the browser in production — only the user's inbox receives it.
 export async function requestPasswordReset(formData: FormData): Promise<ActionResult> {
   const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) return { ok: false, message: "Invalid email address" };
@@ -19,9 +26,8 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
 
-  // Always respond success to avoid email enumeration.
   if (!user || !user.isActive) {
-    return { ok: true, message: "If that email exists, a reset link has been generated." };
+    return { ok: true, message: GENERIC_RESET_MESSAGE };
   }
 
   const token = randomBytes(32).toString("hex");
@@ -31,12 +37,15 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
   });
   await logActivity({ userId: user.id, action: "Password Reset Requested" });
 
-  // Returned only for demo/dev. Replace with an email send in production.
-  return {
-    ok: true,
-    message: "Reset link generated.",
-    token,
-  };
+  const resetUrl = appUrl(`/reset-password?token=${token}`);
+  const sent = await sendPasswordResetEmail(user.email, resetUrl);
+
+  // Local development only: when no email provider is configured, surface the
+  // link so resets are testable. In production the link is never returned.
+  if (process.env.NODE_ENV !== "production" && !sent) {
+    return { ok: true, message: "Dev: no email provider — use this link.", token };
+  }
+  return { ok: true, message: GENERIC_RESET_MESSAGE };
 }
 
 export async function resetPassword(formData: FormData): Promise<ActionResult> {

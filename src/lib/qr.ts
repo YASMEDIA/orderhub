@@ -24,6 +24,11 @@ export function invoiceUrl(publicId: string): string {
   return `${resolveBaseUrl()}/invoice/${publicId}`;
 }
 
+// Absolute URL on the public site for an arbitrary path (e.g. password reset).
+export function appUrl(path = ""): string {
+  return `${resolveBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 // PNG data URL — high error correction + margin keeps it scannable at sticker size.
 export async function qrDataUrl(publicId: string, size = 220): Promise<string> {
   return QRCode.toDataURL(invoiceUrl(publicId), {
