@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, Trash2, CheckCircle2, Instagram, Phone } from "lucide-react";
+import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, ChevronRight, Trash2, CheckCircle2, Instagram, Phone, X } from "lucide-react";
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
 import { priceForQuantity } from "@/lib/pricing";
@@ -606,6 +606,7 @@ function ProductCard({
   setQuantity: (key: string, q: number) => void;
 }) {
   const [draftQty, setDraftQty] = useState(1);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const hasVariants = p.variants.length > 0;
   const variant = hasVariants
     ? p.variants.find((v) => v.id === selectedVariantId) ?? p.variants[0]
@@ -650,14 +651,30 @@ function ProductCard({
     setQuantity(key, q + draftQty);
     setDraftQty(1);
   }
+  const activeImage = lightboxIndex !== null ? images[lightboxIndex] : null;
+  const activeImageNumber = lightboxIndex === null ? 0 : lightboxIndex + 1;
+  const showPrevImage = () => {
+    setLightboxIndex((i) => (i === null ? null : (i - 1 + images.length) % images.length));
+  };
+  const showNextImage = () => {
+    setLightboxIndex((i) => (i === null ? null : (i + 1) % images.length));
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border">
       {images.length > 0 ? (
         <div className="flex snap-x gap-2 overflow-x-auto p-2">
           {images.map((img, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={`${variant?.id ?? "base"}-${i}`} src={img} alt={p.name} className="h-32 w-32 shrink-0 snap-start rounded-md border object-cover" />
+            <button
+              key={`${variant?.id ?? "base"}-${i}`}
+              type="button"
+              onClick={() => setLightboxIndex(i)}
+              className="shrink-0 snap-start rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              aria-label={`Open ${p.name} image ${i + 1}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img} alt={p.name} className="h-32 w-32 rounded-md border object-cover" />
+            </button>
           ))}
         </div>
       ) : null}
@@ -774,6 +791,63 @@ function ProductCard({
           </Button>
         </div>
       </div>
+      {activeImage ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="flex max-h-[88vh] w-full max-w-md flex-col rounded-2xl border bg-background p-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 pb-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{p.name}</p>
+                <p className="text-xs text-muted-foreground">{activeImageNumber} / {images.length}</p>
+              </div>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setLightboxIndex(null)} aria-label="Close image">
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="flex min-h-0 w-full items-center gap-2">
+              {images.length > 1 ? (
+                <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={showPrevImage} aria-label="Previous image">
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+              ) : null}
+              <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border bg-muted/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={activeImage} alt={p.name} className="max-h-[58vh] w-full object-contain" />
+              </div>
+              {images.length > 1 ? (
+                <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={showNextImage} aria-label="Next image">
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              ) : null}
+            </div>
+
+            {images.length > 1 ? (
+              <div className="flex w-full gap-2 overflow-x-auto pt-3">
+                {images.map((img, i) => (
+                  <button
+                    key={`thumb-${variant?.id ?? "base"}-${i}`}
+                    type="button"
+                    onClick={() => setLightboxIndex(i)}
+                    className={`shrink-0 rounded-md border p-0.5 ${i === lightboxIndex ? "border-primary" : "border-border"}`}
+                    aria-label={`Show image ${i + 1}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img} alt="" className="h-16 w-16 rounded object-cover" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
