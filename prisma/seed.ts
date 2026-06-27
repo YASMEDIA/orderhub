@@ -21,15 +21,32 @@ async function main() {
   // Global platform settings.
   await prisma.setting.upsert({ where: { id: "global" }, create: { id: "global" }, update: {} });
 
-  // Bootstrap the Super Admin. Created only if missing so a password you change
-  // in the UI is preserved across restarts; if it exists we just keep it active.
+  // Bootstrap the Super Admin — but never keep a placeholder admin around once a
+  // real one exists. The default admin@mahalatly.com is usually NOT a real
+  // mailbox, so leaving it active makes order-notification emails bounce.
+  const activeSuperAdmins = await prisma.user.findMany({
+    where: { role: "SUPER_ADMIN", isActive: true },
+    select: { email: true },
+  });
+  const hasOtherActiveSuperAdmin = activeSuperAdmins.some((u) => u.email !== email);
   const existingAdmin = await prisma.user.findUnique({ where: { email } });
+
   if (!existingAdmin) {
-    const passwordHash = await bcrypt.hash(password, 12);
-    await prisma.user.create({
-      data: { fullName: "Super Admin", email, passwordHash, role: "SUPER_ADMIN" },
-    });
+    // First-run only: create the bootstrap admin when there's no Super Admin yet.
+    if (activeSuperAdmins.length === 0) {
+      const passwordHash = await bcrypt.hash(password, 12);
+      await prisma.user.create({
+        data: { fullName: "Super Admin", email, passwordHash, role: "SUPER_ADMIN" },
+      });
+    }
+  } else if (hasOtherActiveSuperAdmin) {
+    // Another real Super Admin runs the store → retire the placeholder so it stops
+    // receiving (and bouncing) order emails. Reversible from the Users page.
+    if (existingAdmin.isActive) {
+      await prisma.user.update({ where: { email }, data: { isActive: false } });
+    }
   } else if (existingAdmin.role !== "SUPER_ADMIN" || !existingAdmin.isActive) {
+    // It's the only Super Admin — keep it usable so you're never locked out.
     await prisma.user.update({ where: { email }, data: { role: "SUPER_ADMIN", isActive: true } });
   }
 
