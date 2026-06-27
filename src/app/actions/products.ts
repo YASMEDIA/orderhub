@@ -204,7 +204,14 @@ export async function getAccessibleProducts() {
   const user = await requireUser();
   return prisma.product.findMany({
     where: { ...projectScopeWhere(user), isActive: true },
-    include: { tiers: { orderBy: { minQuantity: "asc" } } },
+    include: {
+      tiers: { orderBy: { minQuantity: "asc" } },
+      variants: {
+        where: { isActive: true },
+        orderBy: { position: "asc" },
+        select: { id: true, name: true, colorHex: true, stock: true },
+      },
+    },
     orderBy: { name: "asc" },
   });
 }

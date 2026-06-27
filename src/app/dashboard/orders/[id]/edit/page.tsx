@@ -31,6 +31,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
           projectId: p.projectId,
           basePrice: p.basePrice,
           tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+          variants: p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, stock: v.stock })),
         }))}
         defaultValues={{
           projectId: order.projectId,
@@ -50,7 +51,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
           apartmentNumber: order.apartmentNumber ?? "",
           locationUrl: order.locationUrl ?? "",
           deliveryFee: order.deliveryFee,
-          items: order.items.map((it) => ({ productId: it.productId ?? "", productName: it.productName, quantity: it.quantity, unitPrice: it.unitPrice })),
+          items: order.items.map((it) => ({ productId: it.productId ?? "", variantId: it.variantId ?? "", productName: it.productName, quantity: it.quantity, unitPrice: it.unitPrice })),
         }}
       />
     </div>
