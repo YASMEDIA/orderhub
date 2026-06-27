@@ -26,12 +26,14 @@ import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 type ProjectOption = { id: string; name: string };
+type ProductVariantOption = { id: string; name: string; colorHex: string; stock: number };
 type ProductOption = {
   id: string;
   name: string;
   projectId: string;
   basePrice: number;
   tiers: { minQuantity: number; unitPrice: number }[];
+  variants: ProductVariantOption[];
 };
 
 export function OrderForm({
@@ -66,7 +68,7 @@ export function OrderForm({
       orderDate: new Date().toISOString().slice(0, 10),
       deliveryDate: new Date().toISOString().slice(0, 10),
       deliveryFee: DEFAULT_DELIVERY_FEE,
-      items: [{ productId: "", productName: "", quantity: 1, unitPrice: 0 }],
+      items: [{ productId: "", variantId: "", productName: "", quantity: 1, unitPrice: 0 }],
       ...defaultValues,
     },
   });
@@ -87,15 +89,21 @@ export function OrderForm({
     [products, projectId],
   );
 
-  // Pick a catalog product for a line: fills name + tiered unit price for the qty.
+  // Pick a catalog product for a line: fills name + tiered unit price for the qty,
+  // and pre-selects the first in-stock colour when the product has variants.
   function applyProduct(index: number, productId: string) {
     setValue(`items.${index}.productId`, productId);
+    setValue(`items.${index}.variantId`, "");
     if (!productId) return; // "Custom item"
     const prod = productMap.get(productId);
     if (!prod) return;
     const qty = Number(items?.[index]?.quantity) || 1;
     setValue(`items.${index}.productName`, prod.name);
     setValue(`items.${index}.unitPrice`, priceForQuantity(prod.basePrice, prod.tiers, qty));
+    if (prod.variants.length > 0) {
+      const firstInStock = prod.variants.find((v) => v.stock > 0) ?? prod.variants[0];
+      setValue(`items.${index}.variantId`, firstInStock.id);
+    }
   }
 
   // When the quantity changes on a catalog line, recompute the tiered price.
@@ -264,22 +272,44 @@ export function OrderForm({
             const qty = Number(items?.[i]?.quantity) || 0;
             const price = Number(items?.[i]?.unitPrice) || 0;
             const selectedProductId = items?.[i]?.productId ?? "";
+            const selectedProduct = productMap.get(selectedProductId);
+            const variantId = items?.[i]?.variantId ?? "";
             const qtyReg = register(`items.${i}.quantity`);
             return (
               <div key={field.id} className="space-y-2 rounded-md border p-3">
                 {projectProducts.length > 0 ? (
-                  <div className="space-y-1">
-                    <Label className="text-xs">Catalog Product</Label>
-                    <select
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                      value={selectedProductId}
-                      onChange={(e) => applyProduct(i, e.target.value)}
-                    >
-                      <option value="">— Custom item —</option>
-                      {projectProducts.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Catalog Product</Label>
+                      <select
+                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        value={selectedProductId}
+                        onChange={(e) => applyProduct(i, e.target.value)}
+                      >
+                        <option value="">— Custom item —</option>
+                        {projectProducts.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedProduct && selectedProduct.variants.length > 0 ? (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Colour (deducts from its stock)</Label>
+                        <select
+                          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                          value={variantId}
+                          onChange={(e) => setValue(`items.${i}.variantId`, e.target.value)}
+                        >
+                          <option value="">— Choose colour —</option>
+                          {selectedProduct.variants.map((v) => (
+                            <option key={v.id} value={v.id} disabled={v.stock <= 0}>
+                              {v.name} {v.stock > 0 ? `(${v.stock} in stock)` : "— sold out"}
+                            </option>
+                          ))}
+                        </select>
+                        <input type="hidden" {...register(`items.${i}.variantId`)} />
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 <div className="grid grid-cols-12 items-end gap-2">
@@ -320,7 +350,7 @@ export function OrderForm({
             );
           })}
           {err(errors.items?.message)}
-          <Button type="button" variant="outline" onClick={() => append({ productId: "", productName: "", quantity: 1, unitPrice: 0 })}>
+          <Button type="button" variant="outline" onClick={() => append({ productId: "", variantId: "", productName: "", quantity: 1, unitPrice: 0 })}>
             <Plus className="h-4 w-4" /> Add Item
           </Button>
         </CardContent>

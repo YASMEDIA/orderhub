@@ -73,6 +73,7 @@ export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 
 export const orderItemSchema = z.object({
   productId: z.string().optional().or(z.literal("").transform(() => undefined)),
+  variantId: z.string().optional().or(z.literal("").transform(() => undefined)),
   productName: z.string().trim().min(1, "Product name required"),
   quantity: z.coerce.number().int().min(1, "Min 1"),
   unitPrice: z.coerce.number().min(0, "Cannot be negative"),

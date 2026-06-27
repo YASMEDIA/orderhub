@@ -28,6 +28,7 @@ export default async function NewOrderPage() {
             projectId: p.projectId,
             basePrice: p.basePrice,
             tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+            variants: p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, stock: v.stock })),
           }))}
         />
       )}
