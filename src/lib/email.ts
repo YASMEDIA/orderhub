@@ -167,7 +167,10 @@ export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
         attachments: [{ filename, content: pdf }],
       });
       // Resend returns an error object instead of throwing.
-      if (error) console.error(`[email] Resend error for order ${orderId}:`, error);
+      if (error) {
+        console.error(`[email] Resend error for order ${orderId}:`, error);
+        return;
+      }
     } else {
       const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER!;
       await transporter!.sendMail({
@@ -178,6 +181,7 @@ export async function sendOrderInvoiceEmail(orderId: string): Promise<void> {
         attachments: [{ filename, content: pdf }],
       });
     }
+    console.log(`[email] new-order notification for ${order.orderNumber} sent to ${to.length} recipient(s) via ${resend ? "resend" : "smtp"}`);
   } catch (err) {
     console.error(`[email] failed to send invoice email for order ${orderId}`, err);
   }

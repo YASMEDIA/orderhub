@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { publicOrderSchema } from "@/lib/validations";
@@ -150,10 +151,10 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     });
 
     await logActivity({ action: "Online Order", detail: order.orderNumber, projectId: project.id });
-    // Awaited so it actually runs on serverless (Vercel kills background work
-    // after the response). Resend is fast and sendOrderInvoiceEmail never
-    // throws, so this won't hang or break the order.
-    await sendOrderInvoiceEmail(order.id);
+    // Send the new-order email AFTER the response via after() — it keeps the
+    // function alive (waitUntil) so the email reliably completes without making
+    // the customer wait. sendOrderInvoiceEmail never throws.
+    after(() => sendOrderInvoiceEmail(order.id));
     return { ok: true, publicId: order.publicId, orderNumber: order.orderNumber };
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("OUT_OF_STOCK:")) {
