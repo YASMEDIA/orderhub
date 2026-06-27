@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
@@ -162,10 +163,11 @@ export async function createOrder(input: unknown): Promise<OrderActionResult> {
     });
     revalidatePath("/dashboard/orders");
     revalidatePath("/dashboard");
-    // Awaited so it actually runs on serverless (Vercel kills background work
-    // after the response). Resend is fast and sendOrderInvoiceEmail never
-    // throws, so this won't hang or break order creation.
-    await sendOrderInvoiceEmail(order.id);
+    // Send the new-order email AFTER the response. `after()` keeps the function
+    // alive (via the platform's waitUntil) so the email reliably completes —
+    // unlike a plain await (which can be cut off mid-send) or fire-and-forget
+    // (which Vercel kills). sendOrderInvoiceEmail never throws.
+    after(() => sendOrderInvoiceEmail(order.id));
     return { ok: true, message: "Order created", orderId: order.id, publicId: order.publicId };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
