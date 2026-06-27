@@ -17,6 +17,7 @@ type ProjectRow = {
   slug: string | null;
   logoUrl: string | null;
   storeEnabled: boolean;
+  showOnHome: boolean;
   showStock: boolean;
   instagram: string | null;
   tiktok: string | null;
@@ -59,6 +60,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   const [slug, setSlug] = useState(project.slug ?? "");
   const [logo, setLogo] = useState(project.logoUrl ?? "");
   const [enabled, setEnabled] = useState(project.storeEnabled);
+  const [showOnHome, setShowOnHome] = useState(project.showOnHome);
   const [showStock, setShowStock] = useState(project.showStock);
   const [instagram, setInstagram] = useState(project.instagram ?? "");
   const [tiktok, setTiktok] = useState(project.tiktok ?? "");
@@ -91,6 +93,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
       const res = await updateStoreSettings(project.id, {
         slug,
         storeEnabled: enabled,
+        showOnHome,
         showStock,
         logoUrl: logo,
         instagram,
@@ -140,6 +143,10 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
               Store is live (public)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={showOnHome} onChange={(e) => setShowOnHome(e.target.checked)} />
+              Show on homepage
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={showStock} onChange={(e) => setShowStock(e.target.checked)} />

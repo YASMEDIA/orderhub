@@ -41,6 +41,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
       data: {
         slug: data.slug ?? null,
         storeEnabled: data.storeEnabled,
+        showOnHome: data.showOnHome,
         showStock: data.showStock,
         logoUrl: data.logoUrl || null,
         instagram: data.instagram ?? null,
@@ -52,6 +53,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
     await logActivity({ userId: user.id, action: "Update Store Settings", projectId });
     revalidatePath("/dashboard/store");
     revalidatePath("/dashboard/projects");
+    revalidatePath("/");
     return { ok: true, message: "Store settings saved" };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
