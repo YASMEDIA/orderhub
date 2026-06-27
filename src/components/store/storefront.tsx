@@ -28,6 +28,14 @@ type Variant = {
   stock: number;
   images: string[];
 };
+type Addon = {
+  id: string;
+  name: string;
+  price: number;
+  hasTextInput: boolean;
+};
+type CartAddon = Addon & { text?: string };
+type CartLineDraft = { key: string; p: Product; variant: Variant | null; addons: CartAddon[]; q: number };
 type Product = {
   id: string;
   name: string;
@@ -35,6 +43,7 @@ type Product = {
   images?: string[];
   basePrice: number;
   tiers: { minQuantity: number; unitPrice: number }[];
+  addons: Addon[];
   variants: Variant[];
 };
 // Incoming props carry variants without images; images arrive via a flat
@@ -115,12 +124,29 @@ type FormState = {
   paymentMethod: string;
 };
 
-// A cart line is keyed by product + variant so each colour is a separate item.
-const lineKey = (productId: string, variantId?: string | null) =>
-  variantId ? `${productId}::${variantId}` : productId;
-const parseKey = (key: string): { productId: string; variantId: string | null } => {
-  const [productId, variantId] = key.split("::");
-  return { productId, variantId: variantId ?? null };
+// A cart line is keyed by product + variant + selected add-ons. Different add-on
+// sets must stay separate because the per-unit price is different.
+type AddonSelection = { id: string; text?: string };
+const addonKey = (addons: AddonSelection[] = []) =>
+  [...addons]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((a) => `${encodeURIComponent(a.id)}=${encodeURIComponent((a.text ?? "").trim())}`)
+    .join("|");
+const optionKey = (productId: string, variantId?: string | null) => `${productId}::${variantId ?? ""}`;
+const lineKey = (productId: string, variantId?: string | null, addons: AddonSelection[] = []) =>
+  `${productId}::${variantId ?? ""}::${addonKey(addons)}`;
+const parseKey = (key: string): { productId: string; variantId: string | null; addons: AddonSelection[] } => {
+  const [productId, variantId = "", addons = ""] = key.split("::");
+  return {
+    productId,
+    variantId: variantId || null,
+    addons: addons
+      ? addons.split("|").filter(Boolean).map((part) => {
+          const [id = "", text = ""] = part.split("=");
+          return { id: decodeURIComponent(id), text: decodeURIComponent(text) || undefined };
+        })
+      : [],
+  };
 };
 const round3 = (n: number) => Number(n.toFixed(3));
 const variantStock = (v: Variant) => Math.max(0, v.stock);
@@ -148,6 +174,8 @@ export function Storefront({
   );
   const [step, setStep] = useState<Step>("products");
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, string[]>>({});
+  const [addonTexts, setAddonTexts] = useState<Record<string, string>>({});
   // Which variant swatch is active per product on the product card.
   const [selected, setSelected] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -180,6 +208,16 @@ export function Storefront({
 
   const set = (k: keyof FormState, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const setQuantity = (key: string, q: number) => setQty((p) => ({ ...p, [key]: Math.max(0, q) }));
+  const toggleAddon = (key: string, addonId: string) =>
+    setSelectedAddons((prev) => {
+      const current = prev[key] ?? [];
+      const next = current.includes(addonId)
+        ? current.filter((id) => id !== addonId)
+        : [...current, addonId];
+      return { ...prev, [key]: next };
+    });
+  const setAddonText = (key: string, addonId: string, text: string) =>
+    setAddonTexts((prev) => ({ ...prev, [`${key}::${addonId}`]: text }));
   const areas = AREAS_BY_GOVERNORATE[form.governorate] ?? [];
 
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
@@ -187,24 +225,29 @@ export function Storefront({
   // Resolve selected quantities into priced cart lines. Tier pricing uses the
   // TOTAL quantity across all of a product's variants, applied to every unit.
   const cart = useMemo(() => {
-    const lines = Object.entries(qty)
+    const lines: CartLineDraft[] = Object.entries(qty)
       .filter(([, q]) => q > 0)
-      .map(([key, q]) => {
-        const { productId, variantId } = parseKey(key);
+      .flatMap(([key, q]) => {
+        const { productId, variantId, addons: addonSelections } = parseKey(key);
         const p = productById.get(productId);
-        if (!p) return null;
+        if (!p) return [];
         const variant = variantId ? p.variants.find((v) => v.id === variantId) ?? null : null;
-        if (variantId && !variant) return null;
-        return { key, p, variant, q };
-      })
-      .filter((x): x is { key: string; p: Product; variant: Variant | null; q: number } => x !== null);
+        if (variantId && !variant) return [];
+        const addons = addonSelections.flatMap((selection) => {
+          const addon = p.addons.find((a) => a.id === selection.id);
+          return addon ? [{ ...addon, text: addon.hasTextInput ? selection.text : undefined }] : [];
+        });
+        return [{ key, p, variant, addons, q }];
+      });
 
     const totalByProduct = new Map<string, number>();
     for (const l of lines) totalByProduct.set(l.p.id, (totalByProduct.get(l.p.id) ?? 0) + l.q);
 
     return lines.map((l) => {
-      const unit = priceForQuantity(l.p.basePrice, l.p.tiers, totalByProduct.get(l.p.id) ?? l.q);
-      return { ...l, unit, line: round3(unit * l.q) };
+      const baseUnit = round3(priceForQuantity(l.p.basePrice, l.p.tiers, totalByProduct.get(l.p.id) ?? l.q));
+      const addonUnit = round3(l.addons.reduce((sum, a) => sum + a.price, 0));
+      const unit = round3(baseUnit + addonUnit);
+      return { ...l, baseUnit, addonUnit, unit, line: round3(unit * l.q) };
     });
   }, [qty, productById]);
 
@@ -229,7 +272,12 @@ export function Storefront({
     setLoading(true);
     const res = await placePublicOrder(project.slug, {
       ...form,
-      items: cart.map((x) => ({ productId: x.p.id, variantId: x.variant?.id, quantity: x.q })),
+      items: cart.map((x) => ({
+        productId: x.p.id,
+        variantId: x.variant?.id,
+        addons: x.addons.map((a) => ({ id: a.id, text: a.text })),
+        quantity: x.q,
+      })),
     });
     setLoading(false);
     if (!res.ok) {
@@ -328,6 +376,10 @@ export function Storefront({
                 showStock={project.showStock !== false}
                 selectedVariantId={selected[p.id]}
                 onSelectVariant={(vid) => setSelected((s) => ({ ...s, [p.id]: vid }))}
+                selectedAddons={selectedAddons[optionKey(p.id, selected[p.id])] ?? []}
+                addonTexts={addonTexts}
+                onToggleAddon={(addonId) => toggleAddon(optionKey(p.id, selected[p.id]), addonId)}
+                onAddonTextChange={(addonId, text) => setAddonText(optionKey(p.id, selected[p.id]), addonId, text)}
                 qty={qty}
                 setQuantity={setQuantity}
               />
@@ -358,7 +410,7 @@ export function Storefront({
             </div>
           ) : (
             <>
-              {cart.map(({ key, p, variant, q, unit, line }) => {
+              {cart.map(({ key, p, variant, addons, q, unit, line }) => {
                 const img = variant?.images?.[0] ?? p.images?.[0];
                 const cap = variant ? variantStock(variant) : Infinity;
                 return (
@@ -375,6 +427,15 @@ export function Storefront({
                             <span className="h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: variant.colorHex }} />
                             {variant.name}
                           </p>
+                        ) : null}
+                        {addons.length ? (
+                          <div className="mt-1 space-y-0.5">
+                            {addons.map((a) => (
+                              <p key={a.id} className="text-xs text-muted-foreground">
+                                + {a.name}{a.text ? `: ${a.text}` : ""} ({formatAmount(a.price)} {CURRENCY} each)
+                              </p>
+                            ))}
+                          </div>
                         ) : null}
                         <p className="text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</p>
                         <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
@@ -485,10 +546,11 @@ export function Storefront({
 
           {/* Order summary */}
           <section className="space-y-1 rounded-lg border bg-muted/40 p-3 text-sm">
-            {cart.map(({ key, p, variant, q, line }) => (
-              <div key={key} className="flex justify-between">
+            {cart.map(({ key, p, variant, addons, q, line }) => (
+              <div key={key} className="flex justify-between gap-3">
                 <span className="text-muted-foreground">
                   {q} × {p.name}{variant ? ` — ${variant.name}` : ""}
+                  {addons.length ? ` + ${addons.map((a) => `${a.name}${a.text ? `: ${a.text}` : ""}`).join(", ")}` : ""}
                 </span>
                 <span>{formatAmount(line)}</span>
               </div>
@@ -525,6 +587,10 @@ function ProductCard({
   showStock,
   selectedVariantId,
   onSelectVariant,
+  selectedAddons,
+  addonTexts,
+  onToggleAddon,
+  onAddonTextChange,
   qty,
   setQuantity,
 }: {
@@ -532,20 +598,58 @@ function ProductCard({
   showStock: boolean;
   selectedVariantId?: string;
   onSelectVariant: (variantId: string) => void;
+  selectedAddons: string[];
+  addonTexts: Record<string, string>;
+  onToggleAddon: (addonId: string) => void;
+  onAddonTextChange: (addonId: string, text: string) => void;
   qty: Record<string, number>;
   setQuantity: (key: string, q: number) => void;
 }) {
+  const [draftQty, setDraftQty] = useState(1);
   const hasVariants = p.variants.length > 0;
   const variant = hasVariants
     ? p.variants.find((v) => v.id === selectedVariantId) ?? p.variants[0]
     : null;
 
   const images = (variant?.images?.length ? variant.images : p.images) ?? [];
-  const key = lineKey(p.id, variant?.id);
+  const currentOptionKey = optionKey(p.id, variant?.id);
+  const addonSelections = selectedAddons.map((id) => ({
+    id,
+    text: addonTexts[`${currentOptionKey}::${id}`]?.trim() || undefined,
+  }));
+  const selectedAddonKey = addonKey(addonSelections);
+  const key = lineKey(p.id, variant?.id, addonSelections);
   const q = qty[key] || 0;
   const stock = hasVariants ? (variant ? variantStock(variant) : 0) : Infinity;
+  const inCartForVariant = hasVariants
+    ? Object.entries(qty).reduce((sum, [cartKey, cartQty]) => {
+        const parsed = parseKey(cartKey);
+        return parsed.productId === p.id && parsed.variantId === variant?.id ? sum + cartQty : sum;
+      }, 0)
+    : 0;
+  const remaining = hasVariants ? Math.max(0, stock - inCartForVariant) : Infinity;
   const totalStock = hasVariants ? productStock(p) : null;
   const soldOut = hasVariants && stock <= 0;
+  const missingAddonText = selectedAddons.some((id) => {
+    const addon = p.addons.find((a) => a.id === id);
+    return Boolean(addon?.hasTextInput && !addonTexts[`${currentOptionKey}::${id}`]?.trim());
+  });
+  const stockUnavailable = soldOut || remaining <= 0;
+  const cannotAdd = stockUnavailable || missingAddonText;
+
+  useEffect(() => {
+    setDraftQty(1);
+  }, [key]);
+
+  useEffect(() => {
+    if (Number.isFinite(remaining) && draftQty > remaining) setDraftQty(Math.max(1, remaining));
+  }, [draftQty, remaining]);
+
+  function addDraftToCart() {
+    if (cannotAdd) return;
+    setQuantity(key, q + draftQty);
+    setDraftQty(1);
+  }
 
   return (
     <div className="overflow-hidden rounded-lg border">
@@ -606,22 +710,68 @@ function ProductCard({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-end">
-          {q > 0 ? (
-            <div className="flex shrink-0 items-center gap-2">
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, q - 1)}>
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="w-6 text-center font-semibold">{q}</span>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9" disabled={q >= stock} onClick={() => setQuantity(key, q + 1)}>
-                <Plus className="h-4 w-4" />
-              </Button>
+        {p.addons.length ? (
+          <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+            <p className="text-xs font-medium text-muted-foreground">Add-ons</p>
+            <div className="space-y-1.5">
+              {p.addons.map((addon) => (
+                <div key={addon.id} className="space-y-1.5">
+                  <label className="flex items-center justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedAddons.includes(addon.id)}
+                        onChange={() => onToggleAddon(addon.id)}
+                      />
+                      <span className="truncate">{addon.name}</span>
+                    </span>
+                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                      + {formatAmount(addon.price)} {CURRENCY}
+                    </span>
+                  </label>
+                  {addon.hasTextInput && selectedAddons.includes(addon.id) ? (
+                    <Input
+                      className="h-9 text-sm"
+                      value={addonTexts[`${currentOptionKey}::${addon.id}`] ?? ""}
+                      onChange={(e) => onAddonTextChange(addon.id, e.target.value)}
+                      maxLength={120}
+                      placeholder="Enter text"
+                    />
+                  ) : null}
+                </div>
+              ))}
             </div>
-          ) : (
-            <Button type="button" variant="secondary" className="shrink-0" disabled={soldOut} onClick={() => setQuantity(key, 1)}>
-              <Plus className="h-4 w-4" /> {soldOut ? "Sold out" : "Add"}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {q > 0 ? <span className="text-xs text-muted-foreground">In cart: {q}</span> : null}
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              disabled={draftQty <= 1}
+              onClick={() => setDraftQty((n) => Math.max(1, n - 1))}
+            >
+              <Minus className="h-4 w-4" />
             </Button>
-          )}
+            <span className="w-6 text-center font-semibold">{draftQty}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              disabled={stockUnavailable || draftQty >= remaining}
+              onClick={() => setDraftQty((n) => n + 1)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button key={selectedAddonKey} type="button" variant="secondary" className="shrink-0" disabled={cannotAdd} onClick={addDraftToCart}>
+            <Plus className="h-4 w-4" /> {missingAddonText ? "Add text" : stockUnavailable ? "Sold out" : "Add"}
+          </Button>
         </div>
       </div>
     </div>

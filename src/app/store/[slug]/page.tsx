@@ -34,13 +34,14 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         where: { isActive: true },
         include: {
           tiers: { orderBy: { minQuantity: "asc" } },
+          addons: { where: { isActive: true }, orderBy: { position: "asc" } },
           variants: {
             where: { isActive: true },
             orderBy: { position: "asc" },
             include: { images: { orderBy: { position: "asc" } } },
           },
         },
-        orderBy: { name: "asc" },
+        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       },
     },
   });
@@ -74,6 +75,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         images: p.images,
         basePrice: p.basePrice,
         tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+        addons: p.addons.map((a) => ({ id: a.id, name: a.name, price: a.price, hasTextInput: a.hasTextInput })),
         variants: p.variants.map((v) => ({
           id: v.id,
           name: v.name,

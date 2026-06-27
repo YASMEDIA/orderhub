@@ -5,6 +5,7 @@ import { renderOrderReceiptPdf, type OrderWithDetails } from "@/lib/order-receip
 import { invoiceUrl } from "@/lib/qr";
 import { formatMoney, formatDate } from "@/lib/format";
 import { labelFor, PAYMENT_METHODS, GOVERNORATES } from "@/lib/constants";
+import { parseAddonSnapshot } from "@/lib/addons";
 
 // Default destination for invoice notifications. Override per-deploy with
 // INVOICE_NOTIFY_EMAIL.
@@ -75,11 +76,16 @@ async function notifyRecipients(): Promise<string[]> {
 function buildHtml(order: OrderWithDetails): string {
   const rows = order.items
     .map(
-      (it) =>
-        `<tr><td style="padding:4px 8px;border-bottom:1px solid #eee">${escapeHtml(it.productName)}</td>` +
+      (it) => {
+        const addons = parseAddonSnapshot(it.addons);
+        const addonHtml = addons.length
+          ? `<div style="margin-top:2px;color:#666;font-size:12px">${addons.map((a) => `+ ${escapeHtml(a.name)}${a.text ? `: ${escapeHtml(a.text)}` : ""} (${formatMoney(a.price)} each)`).join("<br>")}</div>`
+          : "";
+        return `<tr><td style="padding:4px 8px;border-bottom:1px solid #eee">${escapeHtml(it.productName)}${addonHtml}</td>` +
         `<td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center">${it.quantity}</td>` +
         `<td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${formatMoney(it.unitPrice)}</td>` +
-        `<td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${formatMoney(it.lineTotal)}</td></tr>`,
+        `<td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:right">${formatMoney(it.lineTotal)}</td></tr>`;
+      },
     )
     .join("");
 

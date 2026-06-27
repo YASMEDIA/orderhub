@@ -1,13 +1,28 @@
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import { getAccessibleProjects } from "@/app/actions/projects";
 import { StoreManager } from "@/components/store/store-manager";
 
 export default async function StorePage() {
   const user = await requireUser();
   if (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") redirect("/dashboard");
 
-  const projects = await getAccessibleProjects();
+  const projects = await prisma.project.findMany({
+    where: user.role === "SUPER_ADMIN" ? {} : { id: { in: user.projectIds } },
+    include: {
+      products: {
+        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          images: true,
+          isActive: true,
+          position: true,
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -30,6 +45,13 @@ export default async function StorePage() {
           tiktok: p.tiktok,
           whatsapp: p.whatsapp,
           phone: p.phone,
+          products: p.products.map((product) => ({
+            id: product.id,
+            name: product.name,
+            image: product.images[0] ?? null,
+            isActive: product.isActive,
+            position: product.position,
+          })),
         }))}
       />
     </div>

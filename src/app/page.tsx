@@ -82,9 +82,6 @@ function Landing({ stores }: { stores: HomeStore[] }) {
 
       <header dir="ltr" className="animate-soft-fade relative z-10 mx-auto flex h-24 w-full max-w-7xl items-center justify-between border-b border-[#eef2f7]">
         <div className="flex items-center gap-3">
-          <button className="h-14 w-16 rounded-full border border-[#dfe7f2] bg-white text-sm font-black shadow-[0_10px_24px_rgba(12,2,60,0.08)]">
-            EN
-          </button>
           <a
             href="https://wa.me/"
             className="inline-flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-[#0c023c] text-sm font-bold text-white shadow-[0_12px_28px_rgba(12,2,60,0.16)] sm:w-auto sm:px-5"

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { requireUser, requireRole, assertProjectAccess, projectScopeWhere, AuthError } from "@/lib/rbac";
-import { productSchema, type ProductVariantInput } from "@/lib/validations";
+import { productSchema, type ProductAddonInput, type ProductVariantInput } from "@/lib/validations";
 import { logActivity } from "@/lib/activity";
 
 export type ProductActionResult = { ok: boolean; message: string };
@@ -88,6 +88,46 @@ async function syncVariants(
   }
 }
 
+async function syncAddons(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  addons: ProductAddonInput[],
+) {
+  const existing = await tx.productAddon.findMany({ where: { productId }, select: { id: true } });
+  const existingIds = new Set(existing.map((a) => a.id));
+  const keptIds = new Set(addons.map((a) => a.id).filter(Boolean) as string[]);
+
+  const toDelete = existing.filter((a) => !keptIds.has(a.id)).map((a) => a.id);
+  if (toDelete.length) await tx.productAddon.deleteMany({ where: { id: { in: toDelete } } });
+
+  for (let i = 0; i < addons.length; i++) {
+    const addon = addons[i];
+    if (addon.id && existingIds.has(addon.id)) {
+      await tx.productAddon.update({
+        where: { id: addon.id },
+        data: {
+          name: addon.name,
+          price: addon.price,
+          isActive: addon.isActive,
+          hasTextInput: addon.hasTextInput,
+          position: i,
+        },
+      });
+    } else {
+      await tx.productAddon.create({
+        data: {
+          productId,
+          name: addon.name,
+          price: addon.price,
+          isActive: addon.isActive,
+          hasTextInput: addon.hasTextInput,
+          position: i,
+        },
+      });
+    }
+  }
+}
+
 // Server Action arguments can't contain deeply-nested arrays — variant images
 // inside variants[] hit React's "Maximum array nesting exceeded" guard. The
 // client therefore sends the payload as a JSON string; accept either for safety.
@@ -109,6 +149,11 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
     await assertProjectAccess(user, data.projectId);
 
     const product = await prisma.$transaction(async (tx) => {
+      const last = await tx.product.findFirst({
+        where: { projectId: data.projectId },
+        orderBy: { position: "desc" },
+        select: { position: true },
+      });
       const created = await tx.product.create({
         data: {
           name: data.name,
@@ -117,14 +162,17 @@ export async function createProduct(input: unknown): Promise<ProductActionResult
           projectId: data.projectId,
           basePrice: data.basePrice,
           isActive: data.isActive,
+          position: (last?.position ?? -1) + 1,
           tiers: { create: sortTiers(data.tiers) },
         },
       });
       if (data.variants !== undefined) await syncVariants(tx, created.id, data.variants);
+      if (data.addons !== undefined) await syncAddons(tx, created.id, data.addons);
       return created;
     });
     await logActivity({ userId: user.id, action: "Create Product", detail: product.name, projectId: data.projectId });
     revalidatePath("/dashboard/products");
+    revalidatePath("/dashboard/store");
     return { ok: true, message: "Product created" };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
@@ -169,9 +217,11 @@ export async function updateProduct(input: unknown): Promise<ProductActionResult
         },
       });
       if (data.variants !== undefined) await syncVariants(tx, id, data.variants);
+      if (data.addons !== undefined) await syncAddons(tx, id, data.addons);
     });
     await logActivity({ userId: user.id, action: "Edit Product", detail: data.name, projectId: data.projectId });
     revalidatePath("/dashboard/products");
+    revalidatePath("/dashboard/store");
     return { ok: true, message: "Product updated" };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
@@ -191,6 +241,7 @@ export async function deleteProduct(id: string): Promise<ProductActionResult> {
     await prisma.product.delete({ where: { id } });
     await logActivity({ userId: user.id, action: "Delete Product", detail: existing.name, projectId: existing.projectId });
     revalidatePath("/dashboard/products");
+    revalidatePath("/dashboard/store");
     return { ok: true, message: "Product deleted" };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
@@ -206,12 +257,13 @@ export async function getAccessibleProducts() {
     where: { ...projectScopeWhere(user), isActive: true },
     include: {
       tiers: { orderBy: { minQuantity: "asc" } },
+      addons: { where: { isActive: true }, orderBy: { position: "asc" } },
       variants: {
         where: { isActive: true },
         orderBy: { position: "asc" },
         select: { id: true, name: true, colorHex: true, stock: true },
       },
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ position: "asc" }, { name: "asc" }],
   });
 }

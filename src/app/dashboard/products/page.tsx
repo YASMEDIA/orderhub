@@ -14,6 +14,7 @@ export default async function ProductsPage() {
       include: {
         project: { select: { name: true } },
         tiers: { orderBy: { minQuantity: "asc" } },
+        addons: { orderBy: { position: "asc" } },
         variants: {
           orderBy: { position: "asc" },
           include: { images: { orderBy: { position: "asc" } } },
@@ -54,6 +55,7 @@ export default async function ProductsPage() {
             projectId: p.projectId,
             project: { name: p.project.name },
             tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+            addons: p.addons.map((a) => ({ id: a.id, name: a.name, price: a.price, isActive: a.isActive, hasTextInput: a.hasTextInput })),
             variants: p.variants.map((v) => ({
               id: v.id,
               name: v.name,

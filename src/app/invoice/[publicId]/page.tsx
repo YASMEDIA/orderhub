@@ -6,6 +6,7 @@ import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_STATUSES, PAYMENT_METHODS 
 import { buildMapsLink, isExactLocation } from "@/lib/location";
 import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
 import { PoweredBy } from "@/components/brand";
+import { parseAddonSnapshot } from "@/lib/addons";
 
 export const metadata: Metadata = { title: "Invoice — Mahalatly" };
 
@@ -85,23 +86,29 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Products</p>
             <div className="divide-y rounded-lg border">
-              {order.items.map((it) => (
-                <div key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                  <div>
-                    <p className="font-medium">{it.productName}</p>
-                    {it.variantName ? (
-                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {it.variantColor ? (
-                          <span className="h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
-                        ) : null}
-                        {it.variantName}
-                      </p>
-                    ) : null}
-                    <p className="text-xs text-muted-foreground">{it.quantity} × {formatAmount(it.unitPrice)}</p>
+              {order.items.map((it) => {
+                const addons = parseAddonSnapshot(it.addons);
+                return (
+                  <div key={it.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <div>
+                      <p className="font-medium">{it.productName}</p>
+                      {it.variantName ? (
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          {it.variantColor ? (
+                            <span className="h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
+                          ) : null}
+                          {it.variantName}
+                        </p>
+                      ) : null}
+                      {addons.map((a) => (
+                        <p key={a.id} className="text-xs text-muted-foreground">+ {a.name}{a.text ? `: ${a.text}` : ""} ({formatAmount(a.price)} each)</p>
+                      ))}
+                      <p className="text-xs text-muted-foreground">{it.quantity} × {formatAmount(it.unitPrice)}</p>
+                    </div>
+                    <p className="font-medium">{formatAmount(it.lineTotal)}</p>
                   </div>
-                  <p className="font-medium">{formatAmount(it.lineTotal)}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <p className="mt-1 text-right text-xs text-muted-foreground">
               Total quantity: {order.items.reduce((s, it) => s + it.quantity, 0)}

@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, ExternalLink, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, ExternalLink, GripVertical, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateStoreSettings } from "@/app/actions/store";
+import { reorderStoreProducts, updateStoreSettings } from "@/app/actions/store";
 import { useToast } from "@/components/ui/toast";
 import { compressImage } from "@/lib/image-compress";
 
@@ -23,6 +23,14 @@ type ProjectRow = {
   tiktok: string | null;
   whatsapp: string | null;
   phone: string | null;
+  products: ProductRow[];
+};
+type ProductRow = {
+  id: string;
+  name: string;
+  image: string | null;
+  isActive: boolean;
+  position: number;
 };
 
 // Storefront configuration only — logo, link, visibility and contact links.
@@ -46,11 +54,104 @@ export function StoreManager({ projects }: { projects: ProjectRow[] }) {
 
       {project ? (
         // key resets local state when switching projects
-        <StoreSettingsCard key={`s-${project.id}`} project={project} />
+        <>
+          <StoreSettingsCard key={`s-${project.id}`} project={project} />
+          <StoreProductsCard key={`p-${project.id}`} projectId={project.id} projectName={project.name} products={project.products} />
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">No projects available.</p>
       )}
     </div>
+  );
+}
+
+function StoreProductsCard({
+  projectId,
+  projectName,
+  products,
+}: {
+  projectId: string;
+  projectName: string;
+  products: ProductRow[];
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [items, setItems] = useState(products);
+  const [pending, startTransition] = useTransition();
+
+  function move(from: number, to: number) {
+    if (to < 0 || to >= items.length) return;
+    const next = [...items];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    setItems(next);
+    startTransition(async () => {
+      const res = await reorderStoreProducts(projectId, next.map((p) => p.id));
+      toast({
+        title: res.ok ? "Order saved" : "Error",
+        description: res.ok ? undefined : res.message,
+        variant: res.ok ? "default" : "destructive",
+      });
+      if (res.ok) router.refresh();
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Products — {projectName}</CardTitle>
+        <CardDescription>Reorder products on the public store. The first product here appears first to customers.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No products added to this store yet.</p>
+        ) : (
+          items.map((product, index) => (
+            <div key={product.id} className="flex items-center gap-3 rounded-md border p-3">
+              <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {product.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={product.image} alt="" className="h-12 w-12 shrink-0 rounded border object-cover" />
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded border bg-muted text-xs font-bold text-muted-foreground">
+                  {index + 1}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{product.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {product.isActive ? "Visible in store" : "Inactive"}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={pending || index === 0}
+                  onClick={() => move(index, index - 1)}
+                  aria-label="Move product up"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled={pending || index === items.length - 1}
+                  onClick={() => move(index, index + 1)}
+                  aria-label="Move product down"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

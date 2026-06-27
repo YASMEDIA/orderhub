@@ -9,6 +9,7 @@ import { buildMapsLink, isExactLocation } from "@/lib/location";
 import { getSettings } from "@/app/actions/settings";
 import { formatMoney, formatAmount, formatDate } from "@/lib/format";
 import { labelFor, GOVERNORATES, HOUSING_TYPES, ORDER_SOURCES, PAYMENT_METHODS } from "@/lib/constants";
+import { parseAddonSnapshot } from "@/lib/addons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -110,24 +111,32 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </TableRow>
             </TableHeader>
             <TableBody>
-              {order.items.map((it) => (
-                <TableRow key={it.id}>
-                  <TableCell>
-                    {it.productName}
-                    {it.variantName ? (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        {it.variantColor ? (
-                          <span className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
+              {order.items.map((it) => {
+                const addons = parseAddonSnapshot(it.addons);
+                return (
+                  <TableRow key={it.id}>
+                    <TableCell>
+                      <div>
+                        {it.productName}
+                        {it.variantName ? (
+                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            {it.variantColor ? (
+                              <span className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-border" style={{ backgroundColor: it.variantColor }} />
+                            ) : null}
+                            {it.variantName}
+                          </span>
                         ) : null}
-                        {it.variantName}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-center">{it.quantity}</TableCell>
-                  <TableCell className="text-right">{formatAmount(it.unitPrice)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(it.lineTotal)}</TableCell>
-                </TableRow>
-              ))}
+                      </div>
+                      {addons.map((a) => (
+                        <p key={a.id} className="text-xs text-muted-foreground">+ {a.name}{a.text ? `: ${a.text}` : ""} ({formatAmount(a.price)} each)</p>
+                      ))}
+                    </TableCell>
+                    <TableCell className="text-center">{it.quantity}</TableCell>
+                    <TableCell className="text-right">{formatAmount(it.unitPrice)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(it.lineTotal)}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           <div className="ml-auto max-w-xs space-y-1 p-4 text-sm">
