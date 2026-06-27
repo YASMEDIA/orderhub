@@ -80,7 +80,7 @@ function Landing({ stores }: { stores: HomeStore[] }) {
         style={{ background: "radial-gradient(closest-side, rgba(65,162,213,0.14), transparent 72%)" }}
       />
 
-      <header dir="ltr" className="relative z-10 mx-auto flex h-24 w-full max-w-7xl items-center justify-between border-b border-[#eef2f7]">
+      <header dir="ltr" className="animate-soft-fade relative z-10 mx-auto flex h-24 w-full max-w-7xl items-center justify-between border-b border-[#eef2f7]">
         <div className="flex items-center gap-3">
           <button className="h-14 w-16 rounded-full border border-[#dfe7f2] bg-white text-sm font-black shadow-[0_10px_24px_rgba(12,2,60,0.08)]">
             EN
@@ -100,11 +100,11 @@ function Landing({ stores }: { stores: HomeStore[] }) {
         <img src="/brand/mahalatly-icon.svg" alt="Mahalatly" className="h-14 w-14" />
       </header>
 
-      <section className="relative z-10 mx-auto my-10 flex min-h-[calc(100vh-8rem)] w-full max-w-6xl flex-col items-center justify-center rounded-[32px] border border-[#dfe3eb] bg-white/92 px-5 py-14 shadow-[0_28px_80px_rgba(12,2,60,0.08)] sm:my-14 sm:rounded-[42px] sm:px-10">
-        <div className="mb-10 flex flex-col items-center gap-5">
+      <section className="animate-soft-enter relative z-10 mx-auto my-6 flex min-h-[560px] w-full max-w-4xl flex-col items-center justify-center rounded-[24px] border border-[#dfe3eb] bg-white/92 px-4 py-10 shadow-[0_20px_52px_rgba(12,2,60,0.07)] sm:my-8 sm:min-h-[620px] sm:rounded-[30px] sm:px-6">
+        <div className="animate-soft-enter animate-delay-1 mb-6 flex flex-col items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/mahalatly-logo.svg" alt="Mahalatly" className="h-20 w-auto sm:h-24" />
-          <h1 className="text-xl font-bold leading-tight sm:text-2xl" style={{ color: "#5b6678" }}>
+          <img src="/brand/mahalatly-logo.svg" alt="Mahalatly" className="h-14 w-auto sm:h-16" />
+          <h1 className="text-base font-bold leading-tight sm:text-lg" style={{ color: "#5b6678" }}>
             ابحث عن المتجر..
           </h1>
         </div>

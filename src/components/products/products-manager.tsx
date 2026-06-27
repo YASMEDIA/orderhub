@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -104,6 +104,16 @@ export function ProductsManager({
     const compressed = await Promise.all(picked.map((f) => compressImage(f).catch(() => null)));
     const valid = compressed.filter((x): x is string => !!x);
     if (valid.length) setImages((prev) => [...prev, ...valid].slice(0, 4));
+  }
+
+  function moveImage(from: number, to: number) {
+    if (to < 0 || to >= images.length) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -264,6 +274,26 @@ export function ProductsManager({
                   <div key={i} className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img} alt="" className="h-16 w-full rounded border object-cover" />
+                    <div className="absolute bottom-1 left-1 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, i - 1)}
+                        disabled={i === 0}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move image earlier"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, i + 1)}
+                        disabled={i === images.length - 1}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move image later"
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}

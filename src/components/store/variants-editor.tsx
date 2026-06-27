@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,14 @@ export function VariantsEditor({
     onChange(variants.map((v, j) => (j === i ? { ...v, ...patch } : v)));
   const remove = (i: number) => onChange(variants.filter((_, j) => j !== i));
   const add = () => onChange([...variants, emptyVariant()]);
+  const moveImage = (variantIndex: number, from: number, to: number) => {
+    const current = variants[variantIndex].images;
+    if (to < 0 || to >= current.length) return;
+    const nextImages = [...current];
+    const [item] = nextImages.splice(from, 1);
+    nextImages.splice(to, 0, item);
+    update(variantIndex, { images: nextImages });
+  };
 
   async function addImages(i: number, files: FileList | null) {
     const room = MAX_IMAGES - variants[i].images.length;
@@ -108,6 +116,26 @@ export function VariantsEditor({
                     <div key={k} className="relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img} alt="" className="h-14 w-full rounded border object-cover" />
+                      <div className="absolute bottom-1 left-1 flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveImage(i, k, k - 1)}
+                          disabled={k === 0}
+                          className="flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                          aria-label="Move image earlier"
+                        >
+                          <ArrowLeft className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveImage(i, k, k + 1)}
+                          disabled={k === v.images.length - 1}
+                          className="flex h-5 w-5 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                          aria-label="Move image later"
+                        >
+                          <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => update(i, { images: v.images.filter((_, j) => j !== k) })}
