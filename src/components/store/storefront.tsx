@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { Minus, Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, ChevronRight, Trash2, CheckCircle2, Instagram, Phone, X } from "lucide-react";
+import { Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, ChevronRight, Trash2, CheckCircle2, Instagram, Phone, X } from "lucide-react";
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
 import { priceForQuantity } from "@/lib/pricing";
@@ -413,6 +413,8 @@ export function Storefront({
               {cart.map(({ key, p, variant, addons, q, unit, line }) => {
                 const img = variant?.images?.[0] ?? p.images?.[0];
                 const cap = variant ? variantStock(variant) : Infinity;
+                const tierMax = p.tiers.length ? Math.max(...p.tiers.map((t) => t.minQuantity)) : 0;
+                const cartMaxN = cap === Infinity ? Math.max(30, tierMax + 5) : Math.min(cap, Math.max(30, tierMax + 5));
                 return (
                   <div key={key} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -441,19 +443,10 @@ export function Storefront({
                         <p className="mt-0.5 text-sm font-semibold">{formatAmount(line)} {CURRENCY}</p>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {q === 1 ? (
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, 0)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      ) : (
-                        <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, q - 1)}>
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <span className="w-6 text-center font-semibold">{q}</span>
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9" disabled={q >= cap} onClick={() => setQuantity(key, q + 1)}>
-                        <Plus className="h-4 w-4" />
+                    <div className="flex shrink-0 items-center gap-1">
+                      <QuantitySelect value={q} max={cartMaxN} basePrice={p.basePrice} tiers={p.tiers} onChange={(n) => setQuantity(key, n)} removable />
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, 0)} aria-label="Remove">
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </div>
@@ -582,6 +575,48 @@ export function Storefront({
 
 // One storefront product. For products with variants, selecting a colour swaps
 // the images, shows that colour's stock, and adds it to the cart as its own line.
+// Quantity picker as a price list instead of a +/- counter: each option shows
+// the unit price that applies at that quantity, so tier discounts are visible
+// and tempting. With `removable`, selecting 0 removes the cart line.
+function QuantitySelect({
+  value,
+  max,
+  basePrice,
+  tiers,
+  onChange,
+  removable = false,
+}: {
+  value: number;
+  max: number;
+  basePrice: number;
+  tiers: { minQuantity: number; unitPrice: number }[];
+  onChange: (q: number) => void;
+  removable?: boolean;
+}) {
+  const top = Math.max(max, value, 1);
+  const options: number[] = [];
+  for (let i = 1; i <= top; i++) options.push(i);
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      aria-label="Quantity"
+      className="h-9 max-w-[12rem] rounded-md border border-input bg-background px-2 text-sm font-medium"
+    >
+      {removable ? <option value={0}>Remove</option> : null}
+      {options.map((i) => {
+        const unit = priceForQuantity(basePrice, tiers, i);
+        const isTier = tiers.some((t) => t.minQuantity === i);
+        return (
+          <option key={i} value={i}>
+            {i} — {formatAmount(unit)} {CURRENCY} each{isTier ? " 🎉" : ""}
+          </option>
+        );
+      })}
+    </select>
+  );
+}
+
 function ProductCard({
   product: p,
   showStock,
@@ -631,6 +666,8 @@ function ProductCard({
   const remaining = hasVariants ? Math.max(0, stock - inCartForVariant) : Infinity;
   const totalStock = hasVariants ? productStock(p) : null;
   const soldOut = hasVariants && stock <= 0;
+  const tierMax = p.tiers.length ? Math.max(...p.tiers.map((t) => t.minQuantity)) : 0;
+  const listCap = Math.max(30, tierMax + 5);
   const missingAddonText = selectedAddons.some((id) => {
     const addon = p.addons.find((a) => a.id === id);
     return Boolean(addon?.hasTextInput && !addonTexts[`${currentOptionKey}::${id}`]?.trim());
@@ -685,6 +722,11 @@ function ProductCard({
             <p className="font-medium">{p.name}</p>
             {p.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p> : null}
             <p className="mt-0.5 text-sm font-semibold">{formatAmount(p.basePrice)} {CURRENCY}</p>
+            {p.tiers.length > 0 ? (
+              <p className="mt-0.5 text-xs font-medium text-emerald-600">
+                🎉 {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")} {CURRENCY} each
+              </p>
+            ) : null}
           </div>
           {showStock && totalStock !== null ? (
             <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
@@ -763,29 +805,15 @@ function ProductCard({
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           {q > 0 ? <span className="text-xs text-muted-foreground">In cart: {q}</span> : null}
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              disabled={draftQty <= 1}
-              onClick={() => setDraftQty((n) => Math.max(1, n - 1))}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="w-6 text-center font-semibold">{draftQty}</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              disabled={stockUnavailable || draftQty >= remaining}
-              onClick={() => setDraftQty((n) => n + 1)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          {!stockUnavailable ? (
+            <QuantitySelect
+              value={draftQty}
+              max={Number.isFinite(remaining) ? Math.min(remaining as number, listCap) : listCap}
+              basePrice={p.basePrice}
+              tiers={p.tiers}
+              onChange={(n) => setDraftQty(Math.max(1, n))}
+            />
+          ) : null}
           <Button key={selectedAddonKey} type="button" variant="secondary" className="shrink-0" disabled={cannotAdd} onClick={addDraftToCart}>
             <Plus className="h-4 w-4" /> {missingAddonText ? "Add text" : stockUnavailable ? "Sold out" : "Add"}
           </Button>
