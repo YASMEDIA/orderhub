@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Storefront } from "@/components/store/storefront";
+import { MetaPixel } from "@/components/store/meta-pixel";
 
 // Slugs are stored lowercase; normalize the incoming param so links that arrive
 // with different casing or surrounding whitespace still resolve to the store.
@@ -56,33 +57,37 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   }
 
   return (
-    <Storefront
-      project={{
-        name: project.name,
-        slug: project.slug!,
-        logoUrl: project.logoUrl,
-        phone: project.phone,
-        instagram: project.instagram,
-        tiktok: project.tiktok,
-        whatsapp: project.whatsapp,
-        showStock: project.showStock,
-      }}
-      variantImages={variantImages}
-      products={project.products.map((p) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        images: p.images,
-        basePrice: p.basePrice,
-        tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
-        addons: p.addons.map((a) => ({ id: a.id, name: a.name, price: a.price, hasTextInput: a.hasTextInput })),
-        variants: p.variants.map((v) => ({
-          id: v.id,
-          name: v.name,
-          colorHex: v.colorHex,
-          stock: v.stock,
-        })),
-      }))}
-    />
+    <>
+      <MetaPixel pixelId={project.facebookPixelId} />
+      <Storefront
+        project={{
+          name: project.name,
+          slug: project.slug!,
+          logoUrl: project.logoUrl,
+          phone: project.phone,
+          instagram: project.instagram,
+          tiktok: project.tiktok,
+          whatsapp: project.whatsapp,
+          showStock: project.showStock,
+          pixelId: project.facebookPixelId,
+        }}
+        variantImages={variantImages}
+        products={project.products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          images: p.images,
+          basePrice: p.basePrice,
+          tiers: p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+          addons: p.addons.map((a) => ({ id: a.id, name: a.name, price: a.price, hasTextInput: a.hasTextInput })),
+          variants: p.variants.map((v) => ({
+            id: v.id,
+            name: v.name,
+            colorHex: v.colorHex,
+            stock: v.stock,
+          })),
+        }))}
+      />
+    </>
   );
 }

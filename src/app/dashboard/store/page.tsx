@@ -45,6 +45,7 @@ export default async function StorePage() {
           tiktok: p.tiktok,
           whatsapp: p.whatsapp,
           phone: p.phone,
+          facebookPixelId: p.facebookPixelId,
           products: p.products.map((product) => ({
             id: product.id,
             name: product.name,

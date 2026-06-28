@@ -159,6 +159,13 @@ export const storeSettingsSchema = z.object({
   tiktok: optionalText,
   whatsapp: optionalText,
   phone: optionalText,
+  // Meta (Facebook) Pixel ID — digits only (typically 15-16 digits). Optional.
+  facebookPixelId: z
+    .string()
+    .trim()
+    .regex(/^\d{6,20}$/, "Pixel ID must be numbers only (e.g. 1234567890123456)")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 export type StoreSettingsInput = z.infer<typeof storeSettingsSchema>;
 

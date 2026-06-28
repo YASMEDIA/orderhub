@@ -92,6 +92,7 @@ model Project {
   storeEnabled Boolean             @default(false)
   showOnHome   Boolean             @default(false) // include this storefront on the public homepage
   showStock    Boolean             @default(true) // show available quantity to customers on the storefront
+  facebookPixelId String?          // Meta (Facebook) Pixel ID for this store's ad tracking
   assignments  ProjectAssignment[]
   orders       Order[]
   products     Product[]
