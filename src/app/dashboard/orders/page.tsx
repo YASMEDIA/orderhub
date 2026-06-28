@@ -4,12 +4,15 @@ import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser, projectScopeWhere } from "@/lib/rbac";
 import { formatMoney, formatDate } from "@/lib/format";
+import { labelFor, ORDER_SOURCES, PAYMENT_METHODS, GOVERNORATES, HOUSING_TYPES } from "@/lib/constants";
+import { buildMapsLink } from "@/lib/location";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { OrderRowActions } from "@/components/orders/order-actions";
 import { OrderFilters } from "@/components/orders/order-filters";
+import { OrdersMobileList } from "@/components/orders/orders-mobile-list";
 
 const PAGE_SIZE = 20;
 
@@ -75,6 +78,46 @@ export default async function OrdersPage({
 
   const pages = Math.ceil(total / PAGE_SIZE);
 
+  // Flat, serializable shape for the phone view's quick-look pop-up.
+  const quickOrders = orders.map((o) => ({
+    id: o.id,
+    publicId: o.publicId,
+    orderNumber: o.orderNumber,
+    projectName: o.project.name,
+    customerName: o.customerName,
+    customerPhone: o.customerPhone,
+    status: o.status,
+    source: labelFor(ORDER_SOURCES, o.source),
+    paymentMethod: labelFor(PAYMENT_METHODS, o.paymentMethod),
+    createdAt: formatDate(o.createdAt),
+    orderDate: formatDate(o.orderDate),
+    deliveryDate: formatDate(o.deliveryDate),
+    grandTotal: o.grandTotal,
+    subtotal: o.subtotal,
+    deliveryFee: o.deliveryFee,
+    createdByName: o.createdBy?.fullName ?? "Online Store",
+    governorate: labelFor(GOVERNORATES, o.governorate),
+    area: o.area,
+    addressLine: [
+      `Block ${o.block}`,
+      `Street ${o.street}`,
+      labelFor(HOUSING_TYPES, o.housingType),
+      `Building ${o.buildingNumber}`,
+      o.floor ? `Floor ${o.floor}` : null,
+      o.apartmentNumber ? `Apt ${o.apartmentNumber}` : null,
+    ].filter(Boolean).join(" · "),
+    mapsUrl: buildMapsLink(o),
+    items: o.items.map((it) => ({
+      id: it.id,
+      productName: it.productName,
+      variantName: it.variantName,
+      variantColor: it.variantColor,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      lineTotal: it.lineTotal,
+    })),
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -95,7 +138,11 @@ export default async function OrdersPage({
         creators={creators.map((c) => ({ id: c.id, name: c.fullName }))}
       />
 
-      <Card>
+      {/* Phone: simplified cards + View pop-up */}
+      <OrdersMobileList orders={quickOrders} role={user.role} />
+
+      {/* Tablet/desktop: full table */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
