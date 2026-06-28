@@ -9,6 +9,7 @@ import {
 } from "@react-pdf/renderer";
 import { formatAmount, formatDate, formatDateTime } from "./format";
 import { CURRENCY } from "./constants";
+import { parseAddonSnapshot } from "./addons";
 
 export type ReceiptData = {
   projectName: string;
@@ -19,7 +20,7 @@ export type ReceiptData = {
   orderDate: Date | string;
   deliveryDate: Date | string;
   paymentMethod: string; // already-localized label, e.g. "Online Payment" / "Cash"
-  items: { productName: string; variantName?: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { productName: string; variantName?: string | null; quantity: number; unitPrice: number; lineTotal: number; addons?: unknown }[];
   deliveryFee: number;
   subtotal: number;
   grandTotal: number;
@@ -104,7 +105,10 @@ function ReceiptDoc(d: ReceiptData) {
         </View>
         {d.items.map((it, i) => (
           <View key={i} style={styles.itemRow}>
-            <Text style={styles.cName}>{it.productName}{it.variantName ? ` (${it.variantName})` : ""}</Text>
+            <Text style={styles.cName}>
+              {it.productName}{it.variantName ? ` (${it.variantName})` : ""}
+              {parseAddonSnapshot(it.addons).map((a) => `\n+ ${a.name}${a.text ? `: ${a.text}` : ""} (${formatAmount(a.price)})`).join("")}
+            </Text>
             <Text style={styles.cQty}>{it.quantity}</Text>
             <Text style={styles.cPrice}>{formatAmount(it.unitPrice)}</Text>
             <Text style={styles.cTotal}>{formatAmount(it.lineTotal)}</Text>

@@ -41,6 +41,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
       data: {
         slug: data.slug ?? null,
         storeEnabled: data.storeEnabled,
+        showOnHome: data.showOnHome,
         showStock: data.showStock,
         logoUrl: data.logoUrl || null,
         instagram: data.instagram ?? null,
@@ -52,6 +53,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
     await logActivity({ userId: user.id, action: "Update Store Settings", projectId });
     revalidatePath("/dashboard/store");
     revalidatePath("/dashboard/projects");
+    revalidatePath("/");
     return { ok: true, message: "Store settings saved" };
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, message: err.message };
@@ -60,5 +62,43 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
     }
     console.error(err);
     return { ok: false, message: "Failed to save store settings" };
+  }
+}
+
+export async function reorderStoreProducts(projectId: string, productIds: string[]): Promise<StoreActionResult> {
+  try {
+    const user = await requireRole("SUPER_ADMIN", "ADMIN");
+    await assertProjectAccess(user, projectId);
+
+    const uniqueIds = [...new Set(productIds.filter(Boolean))];
+    if (uniqueIds.length !== productIds.length) return { ok: false, message: "Invalid product order" };
+
+    const products = await prisma.product.findMany({
+      where: { projectId },
+      select: { id: true },
+    });
+    const projectProductIds = new Set(products.map((p) => p.id));
+    if (uniqueIds.length !== products.length || uniqueIds.some((id) => !projectProductIds.has(id))) {
+      return { ok: false, message: "Product list changed. Refresh and try again." };
+    }
+
+    await prisma.$transaction(
+      uniqueIds.map((id, position) =>
+        prisma.product.update({
+          where: { id },
+          data: { position },
+        }),
+      ),
+    );
+
+    await logActivity({ userId: user.id, action: "Reorder Store Products", projectId });
+    revalidatePath("/dashboard/store");
+    revalidatePath("/dashboard/products");
+    revalidatePath("/store/[slug]", "page");
+    return { ok: true, message: "Product order saved" };
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, message: err.message };
+    console.error(err);
+    return { ok: false, message: "Failed to reorder products" };
   }
 }

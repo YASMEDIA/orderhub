@@ -30,6 +30,13 @@ export type ProjectInput = z.infer<typeof projectSchema>;
 export const publicOrderItemSchema = z.object({
   productId: z.string().min(1),
   variantId: z.string().optional().or(z.literal("").transform(() => undefined)),
+  addonIds: z.array(z.string()).default([]),
+  addons: z
+    .array(z.object({
+      id: z.string().min(1),
+      text: z.string().trim().max(120).optional().or(z.literal("").transform(() => undefined)),
+    }))
+    .default([]),
   quantity: z.coerce.number().int().min(1),
 });
 
@@ -101,6 +108,15 @@ export const productVariantSchema = z.object({
 });
 export type ProductVariantInput = z.infer<typeof productVariantSchema>;
 
+export const productAddonSchema = z.object({
+  id: z.string().optional().or(z.literal("").transform(() => undefined)),
+  name: z.string().trim().min(1, "Add-on name is required"),
+  price: z.coerce.number().min(0, "Cannot be negative"),
+  isActive: z.coerce.boolean().default(true),
+  hasTextInput: z.coerce.boolean().default(false),
+});
+export type ProductAddonInput = z.infer<typeof productAddonSchema>;
+
 export const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required"),
   description: z
@@ -118,6 +134,8 @@ export const productSchema = z.object({
   images: z.array(z.string()).max(4, "Up to 4 images per product").optional(),
   // Optional: when omitted, variants are left untouched.
   variants: z.array(productVariantSchema).optional(),
+  // Optional: when omitted, add-ons are left untouched.
+  addons: z.array(productAddonSchema).optional(),
 });
 export type ProductInput = z.infer<typeof productSchema>;
 
@@ -132,6 +150,7 @@ export const storeSettingsSchema = z.object({
     .optional()
     .or(z.literal("").transform(() => undefined)),
   storeEnabled: z.coerce.boolean().default(false),
+  showOnHome: z.coerce.boolean().default(false),
   showStock: z.coerce.boolean().default(true),
   logoUrl: z.string().trim().default(""),
   // Contact / social shown under the store name. All optional; a username,

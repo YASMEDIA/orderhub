@@ -40,7 +40,11 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
   const productIds = [...new Set(data.items.map((i) => i.productId))];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, projectId: project.id, isActive: true },
-    include: { tiers: true, variants: { where: { isActive: true } } },
+    include: {
+      tiers: true,
+      addons: { where: { isActive: true } },
+      variants: { where: { isActive: true } },
+    },
   });
   const byId = new Map(products.map((p) => [p.id, p]));
 
@@ -58,6 +62,8 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     variantColor: string | null;
     quantity: number;
     unitPrice: number;
+    addonTotal: number;
+    addons?: { id: string; name: string; price: number; text?: string }[];
     lineTotal: number;
   }[] = [];
   for (const item of data.items) {
@@ -75,7 +81,32 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
     }
 
     const totalQty = totalQtyByProduct.get(product.id) ?? item.quantity;
-    const unitPrice = round3(priceForQuantity(product.basePrice, product.tiers, totalQty));
+    const addonSelections = item.addons.length
+      ? item.addons
+      : (item.addonIds ?? []).map((id) => ({ id, text: undefined as string | undefined }));
+    const uniqueSelections = [...new Map(addonSelections.map((a) => [a.id, a])).values()];
+    const selectedAddons = uniqueSelections.map((selection) => ({
+      selection,
+      addon: product.addons.find((a) => a.id === selection.id),
+    }));
+    if (selectedAddons.some(({ addon }) => !addon)) {
+      return { ok: false, message: `One of the add-ons for ${product.name} is no longer available.` };
+    }
+    if (selectedAddons.some(({ addon, selection }) => addon?.hasTextInput && !selection.text?.trim())) {
+      return { ok: false, message: `Please add the required text for ${product.name}.` };
+    }
+    const addonSnapshots = selectedAddons.flatMap(({ addon, selection }) =>
+      addon
+        ? [{
+            id: addon.id,
+            name: addon.name,
+            price: addon.price,
+            ...(addon.hasTextInput ? { text: selection.text?.trim() } : {}),
+          }]
+        : [],
+    );
+    const addonTotal = round3(addonSnapshots.reduce((sum, a) => sum + a.price, 0));
+    const unitPrice = round3(priceForQuantity(product.basePrice, product.tiers, totalQty) + addonTotal);
     lineItems.push({
       productId: product.id,
       productName: product.name,
@@ -84,6 +115,8 @@ export async function placePublicOrder(slug: string, input: unknown): Promise<Pu
       variantColor: variant?.colorHex ?? null,
       quantity: item.quantity,
       unitPrice,
+      addonTotal,
+      addons: addonSnapshots.length ? addonSnapshots : undefined,
       lineTotal: round3(unitPrice * item.quantity),
     });
   }

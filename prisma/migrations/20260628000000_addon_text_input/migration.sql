@@ -1,0 +1,2 @@
+ALTER TABLE "ProductAddon"
+ADD COLUMN "hasTextInput" BOOLEAN NOT NULL DEFAULT false;

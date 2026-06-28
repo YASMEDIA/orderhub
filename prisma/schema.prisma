@@ -63,60 +63,80 @@ enum PaymentMethod {
 }
 
 model User {
-  id           String              @id @default(cuid())
-  fullName     String
-  email        String              @unique
-  passwordHash String
-  role         Role                @default(EMPLOYEE)
-  isActive     Boolean             @default(true)
-  resetToken   String?             @unique
+  id               String              @id @default(cuid())
+  fullName         String
+  email            String              @unique
+  passwordHash     String
+  role             Role                @default(EMPLOYEE)
+  isActive         Boolean             @default(true)
+  resetToken       String?             @unique
   resetTokenExpiry DateTime?
+  assignments      ProjectAssignment[]
+  orders           Order[]
+  activityLogs     ActivityLog[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model Project {
+  id           String              @id @default(cuid())
+  name         String
+  phone        String?
+  website      String?
+  instagram    String?
+  tiktok       String?
+  whatsapp     String?
+  status       ProjectStatus       @default(ACTIVE)
+  slug         String?             @unique // public storefront URL: /store/:slug
+  logoUrl      String?
+  storeEnabled Boolean             @default(false)
+  showOnHome   Boolean             @default(false) // include this storefront on the public homepage
+  showStock    Boolean             @default(true) // show available quantity to customers on the storefront
   assignments  ProjectAssignment[]
   orders       Order[]
+  products     Product[]
   activityLogs ActivityLog[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
 
-model Project {
-  id          String              @id @default(cuid())
-  name        String
-  phone       String?
-  website     String?
-  instagram   String?
-  tiktok      String?
-  whatsapp    String?
-  status      ProjectStatus       @default(ACTIVE)
-  slug         String?            @unique // public storefront URL: /store/:slug
-  logoUrl      String?
-  storeEnabled Boolean            @default(false)
-  showStock    Boolean            @default(true) // show available quantity to customers on the storefront
-  assignments ProjectAssignment[]
-  orders      Order[]
-  products    Product[]
-  activityLogs ActivityLog[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-}
-
 // A catalog product belonging to a single project, with quantity-based
 // tiered pricing (the more you buy, the lower the unit price).
 model Product {
-  id          String        @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
-  description String?       // shown on the public storefront
-  images      String[]      @default([]) // up to 4 product images (data URLs or https)
-  basePrice  Float         @default(0) // unit price for quantity >= 1
-  isActive   Boolean       @default(true)
-  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId  String
-  tiers      ProductTier[]
-  variants   ProductVariant[]
-  orderItems OrderItem[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  description String? // shown on the public storefront
+  images      String[]         @default([]) // up to 4 product images (data URLs or https)
+  basePrice   Float            @default(0) // unit price for quantity >= 1
+  isActive    Boolean          @default(true)
+  position    Int              @default(0)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  tiers       ProductTier[]
+  variants    ProductVariant[]
+  addons      ProductAddon[]
+  orderItems  OrderItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([projectId])
+}
+
+// Optional per-unit add-ons attached to a product. Their price is added to the
+// product's unit price before multiplying by quantity.
+model ProductAddon {
+  id           String   @id @default(cuid())
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    String
+  name         String
+  price        Float    @default(0)
+  isActive     Boolean  @default(true)
+  hasTextInput Boolean  @default(false)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([productId])
 }
 
 // A selectable variant of a product (e.g. a colour), with its own independent
@@ -126,9 +146,9 @@ model ProductVariant {
   id         String                @id @default(cuid())
   product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  String
-  name       String                // e.g. "Black"
+  name       String // e.g. "Black"
   colorHex   String                @default("#000000") // swatch colour
-  sku        String?               // optional stock-keeping unit
+  sku        String? // optional stock-keeping unit
   stock      Int                   @default(0) // independent inventory
   isActive   Boolean               @default(true)
   position   Int                   @default(0) // display order
@@ -159,8 +179,8 @@ model InventoryMovement {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   variantId String
   delta     Int
-  reason    String         // "ORDER" | "RESTOCK" | "ADJUSTMENT"
-  orderId   String?        // set when caused by an order
+  reason    String // "ORDER" | "RESTOCK" | "ADJUSTMENT"
+  orderId   String? // set when caused by an order
   createdAt DateTime       @default(now())
 
   @@index([variantId])
@@ -191,27 +211,27 @@ model ProjectAssignment {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  publicId    String      @unique // used for /invoice/:publicId
-  orderNumber String      @unique // ORD-2026-000001
+  id          String @id @default(cuid())
+  publicId    String @unique // used for /invoice/:publicId
+  orderNumber String @unique // ORD-2026-000001
   year        Int
 
   customerName  String
   customerPhone String      @default("")
   source        OrderSource
-  orderDate    DateTime
-  deliveryDate DateTime
+  orderDate     DateTime
+  deliveryDate  DateTime
 
   // Address
-  governorate    Governorate
-  area           String
-  block          String
-  street         String
-  housingType    HousingType
-  buildingNumber String
-  floor          String?
+  governorate     Governorate
+  area            String
+  block           String
+  street          String
+  housingType     HousingType
+  buildingNumber  String
+  floor           String?
   apartmentNumber String?
-  locationUrl     String  @default("") // customer's shared map pin / coordinates (optional)
+  locationUrl     String      @default("") // customer's shared map pin / coordinates (optional)
 
   deliveryFee   Float         @default(0)
   subtotal      Float         @default(0)
@@ -220,13 +240,13 @@ model Order {
   deliveredAt   DateTime?     // set when status becomes DELIVERED; drives the driver's 12h grace window
   paymentMethod PaymentMethod @default(CASH)
 
-  items     OrderItem[]
+  items OrderItem[]
 
   project   Project @relation(fields: [projectId], references: [id])
   projectId String
 
   // Nullable: orders placed through the public storefront have no internal creator.
-  createdBy   User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdById String?
 
   createdAt DateTime @default(now())
@@ -248,6 +268,8 @@ model OrderItem {
   quantity    Int
   unitPrice   Float
   lineTotal   Float
+  addonTotal  Float    @default(0) // per-unit add-on total included in unitPrice
+  addons      Json? // snapshot: [{ id, name, price, text }]
 
   // Variant snapshot — kept on the line so invoices stay accurate even if the
   // variant is later renamed or deleted. variantId is nullable (SetNull).
@@ -284,11 +306,11 @@ model OrderCounter {
 
 // Singleton platform settings (id is always "global").
 model Setting {
-  id            String @id @default("global")
-  currency      String @default("KD")
-  timezone      String @default("Asia/Kuwait")
+  id            String   @id @default("global")
+  currency      String   @default("KD")
+  timezone      String   @default("Asia/Kuwait")
   receiptHeader String?
   receiptFooter String?
-  qrSize        Int    @default(220)
+  qrSize        Int      @default(220)
   updatedAt     DateTime @updatedAt
 }

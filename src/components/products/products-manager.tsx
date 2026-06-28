@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { compressImage } from "@/lib/image-compress";
 import { VariantsEditor, type VariantDraft } from "@/components/store/variants-editor";
 
 type Tier = { minQuantity: number | string; unitPrice: number | string };
+type AddonDraft = { id?: string; name: string; price: number | string; isActive: boolean; hasTextInput: boolean };
 type VariantRow = {
   id: string;
   name: string;
@@ -37,6 +38,7 @@ type ProductRow = {
   projectId: string;
   project: { name: string };
   tiers: { minQuantity: number; unitPrice: number }[];
+  addons: { id: string; name: string; price: number; isActive: boolean; hasTextInput: boolean }[];
   variants: VariantRow[];
 };
 type ProjectOption = { id: string; name: string };
@@ -62,6 +64,7 @@ export function ProductsManager({
   const [basePrice, setBasePrice] = useState<string>("0");
   const [isActive, setIsActive] = useState(true);
   const [tiers, setTiers] = useState<Tier[]>([]);
+  const [addons, setAddons] = useState<AddonDraft[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
   const [pending, startTransition] = useTransition();
   const [projectFilter, setProjectFilter] = useState("");
@@ -80,6 +83,7 @@ export function ProductsManager({
     setBasePrice("0");
     setIsActive(true);
     setTiers([]);
+    setAddons([]);
     setVariants([]);
     setOpen(true);
   }
@@ -92,6 +96,7 @@ export function ProductsManager({
     setBasePrice(String(p.basePrice));
     setIsActive(p.isActive);
     setTiers(p.tiers.map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })));
+    setAddons(p.addons.map((a) => ({ id: a.id, name: a.name, price: a.price, isActive: a.isActive, hasTextInput: a.hasTextInput })));
     setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, colorHex: v.colorHex, sku: v.sku ?? "", stock: v.stock, isActive: v.isActive, images: variantImages[v.id] ?? [] })));
     setOpen(true);
   }
@@ -106,6 +111,16 @@ export function ProductsManager({
     if (valid.length) setImages((prev) => [...prev, ...valid].slice(0, 4));
   }
 
+  function moveImage(from: number, to: number) {
+    if (to < 0 || to >= images.length) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const payload = {
@@ -118,6 +133,15 @@ export function ProductsManager({
       tiers: tiers
         .filter((t) => String(t.minQuantity) !== "" && String(t.unitPrice) !== "")
         .map((t) => ({ minQuantity: t.minQuantity, unitPrice: t.unitPrice })),
+      addons: addons
+        .filter((a) => a.name.trim() !== "" && String(a.price) !== "")
+        .map((a) => ({
+          ...(a.id ? { id: a.id } : {}),
+          name: a.name,
+          price: a.price,
+          isActive: a.isActive,
+          hasTextInput: a.hasTextInput,
+        })),
       variants: variants
         .filter((v) => v.name.trim() !== "")
         .map((v) => ({
@@ -264,6 +288,26 @@ export function ProductsManager({
                   <div key={i} className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img} alt="" className="h-16 w-full rounded border object-cover" />
+                    <div className="absolute bottom-1 left-1 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, i - 1)}
+                        disabled={i === 0}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move image earlier"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, i + 1)}
+                        disabled={i === images.length - 1}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border bg-background/95 text-foreground shadow disabled:cursor-not-allowed disabled:opacity-35"
+                        aria-label="Move image later"
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
@@ -316,6 +360,57 @@ export function ProductsManager({
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={() => setTiers((prev) => [...prev, { minQuantity: "", unitPrice: "" }])}>
                   <Plus className="h-4 w-4" /> Add Tier
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Add-ons (charged per item)</Label>
+              <p className="text-xs text-muted-foreground">Example: keychain +1.000 KD. If quantity is 3, the add-on is charged 3 times.</p>
+              <div className="space-y-2">
+                {addons.map((a, i) => (
+                  <div key={a.id ?? i} className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_120px_auto_auto_auto]">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Name</Label>
+                      <Input
+                        value={a.name}
+                        onChange={(e) => setAddons((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                        placeholder="e.g. Keychain"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Price ({CURRENCY})</Label>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        min={0}
+                        value={a.price}
+                        onChange={(e) => setAddons((prev) => prev.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))}
+                      />
+                    </div>
+                    <label className="flex h-10 items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={a.isActive}
+                        onChange={(e) => setAddons((prev) => prev.map((x, j) => (j === i ? { ...x, isActive: e.target.checked } : x)))}
+                      />
+                      Active
+                    </label>
+                    <label className="flex h-10 items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={a.hasTextInput}
+                        onChange={(e) => setAddons((prev) => prev.map((x, j) => (j === i ? { ...x, hasTextInput: e.target.checked } : x)))}
+                      />
+                      Text input
+                    </label>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setAddons((prev) => prev.filter((_, j) => j !== i))}>
+                      <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => setAddons((prev) => [...prev, { name: "", price: "", isActive: true, hasTextInput: false }])}>
+                  <Plus className="h-4 w-4" /> Add Add-on
                 </Button>
               </div>
             </div>
