@@ -23,6 +23,7 @@ type ProjectRow = {
   tiktok: string | null;
   whatsapp: string | null;
   phone: string | null;
+  facebookPixelId: string | null;
   products: ProductRow[];
 };
 type ProductRow = {
@@ -167,6 +168,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
   const [tiktok, setTiktok] = useState(project.tiktok ?? "");
   const [whatsapp, setWhatsapp] = useState(project.whatsapp ?? "");
   const [phone, setPhone] = useState(project.phone ?? "");
+  const [facebookPixelId, setFacebookPixelId] = useState(project.facebookPixelId ?? "");
   const [pending, startTransition] = useTransition();
 
   // Public store links use the canonical base (e.g. https://mahalatly.com),
@@ -201,6 +203,7 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
         tiktok,
         whatsapp,
         phone,
+        facebookPixelId,
       });
       toast({ title: res.ok ? "Saved" : "Error", description: res.ok ? undefined : res.message, variant: res.ok ? "default" : "destructive" });
       if (res.ok) router.refresh();
@@ -280,6 +283,26 @@ function StoreSettingsCard({ project }: { project: ProjectRow }) {
               <Label>Phone (direct call)</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="number (e.g. 96550001111)" inputMode="tel" />
             </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-md border p-4">
+          <div>
+            <p className="text-sm font-medium">Marketing &amp; Tracking (optional)</p>
+            <p className="text-xs text-muted-foreground">
+              Connect this store to your own Facebook/Instagram ads. Paste your Meta Pixel ID
+              (from Events Manager) and we&apos;ll automatically track PageView, AddToCart,
+              InitiateCheckout and Purchase events for your campaigns.
+            </p>
+          </div>
+          <div className="space-y-2 sm:max-w-xs">
+            <Label>Facebook Pixel ID</Label>
+            <Input
+              value={facebookPixelId}
+              onChange={(e) => setFacebookPixelId(e.target.value.replace(/\D/g, ""))}
+              placeholder="e.g. 1234567890123456"
+              inputMode="numeric"
+            />
           </div>
         </div>
 

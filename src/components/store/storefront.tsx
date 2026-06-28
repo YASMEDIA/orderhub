@@ -5,6 +5,7 @@ import { Plus, Loader2, ShoppingBag, ShoppingCart, MapPin, ChevronLeft, ChevronR
 import { placePublicOrder } from "@/app/actions/public-orders";
 import { instagramUrl, tiktokUrl, whatsappUrl, telHref } from "@/lib/social";
 import { priceForQuantity } from "@/lib/pricing";
+import { trackPixel, PIXEL_CURRENCY } from "@/lib/fbpixel";
 import { deliveryFeeFor } from "@/lib/delivery";
 import { formatAmount } from "@/lib/format";
 import {
@@ -59,6 +60,7 @@ type ProjectInfo = {
   tiktok?: string | null;
   whatsapp?: string | null;
   showStock?: boolean;
+  pixelId?: string | null;
 };
 
 // Brand glyphs lucide-react doesn't ship. Monochrome (currentColor) to match
@@ -285,6 +287,13 @@ export function Storefront({
       return;
     }
     setPlaced({ orderNumber: res.orderNumber, publicId: res.publicId, paymentMethod: form.paymentMethod });
+    trackPixel("Purchase", {
+      value: grandTotal,
+      currency: PIXEL_CURRENCY,
+      num_items: count,
+      content_type: "product",
+      contents: cart.map((x) => ({ id: x.p.id, quantity: x.q, item_price: x.unit })),
+    });
   }
 
   function resetOrder() {
@@ -465,7 +474,20 @@ export function Storefront({
               </div>
 
               <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t bg-background/95 p-4 backdrop-blur">
-                <Button type="button" className="h-12 w-full text-base" onClick={() => setStep("checkout")}>
+                <Button
+                  type="button"
+                  className="h-12 w-full text-base"
+                  onClick={() => {
+                    trackPixel("InitiateCheckout", {
+                      value: subtotal,
+                      currency: PIXEL_CURRENCY,
+                      num_items: count,
+                      content_type: "product",
+                      contents: cart.map((x) => ({ id: x.p.id, quantity: x.q, item_price: x.unit })),
+                    });
+                    setStep("checkout");
+                  }}
+                >
                   Checkout · {formatAmount(subtotal)} {CURRENCY}
                 </Button>
               </div>
@@ -685,6 +707,15 @@ function ProductCard({
   function addDraftToCart() {
     if (cannotAdd) return;
     setQuantity(key, q + draftQty);
+    const unitPrice = priceForQuantity(p.basePrice, p.tiers, draftQty);
+    trackPixel("AddToCart", {
+      content_name: p.name,
+      content_ids: [p.id],
+      content_type: "product",
+      value: unitPrice * draftQty,
+      currency: PIXEL_CURRENCY,
+      contents: [{ id: p.id, quantity: draftQty, item_price: unitPrice }],
+    });
     setDraftQty(1);
   }
   const activeImage = lightboxIndex !== null ? images[lightboxIndex] : null;
@@ -704,7 +735,18 @@ function ProductCard({
             <button
               key={`${variant?.id ?? "base"}-${i}`}
               type="button"
-              onClick={() => setLightboxIndex(i)}
+              onClick={() => {
+                setLightboxIndex(i);
+                if (i === 0) {
+                  trackPixel("ViewContent", {
+                    content_name: p.name,
+                    content_ids: [p.id],
+                    content_type: "product",
+                    value: p.basePrice,
+                    currency: PIXEL_CURRENCY,
+                  });
+                }
+              }}
               className="shrink-0 snap-start rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               aria-label={`Open ${p.name} image ${i + 1}`}
             >

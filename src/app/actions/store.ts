@@ -48,6 +48,7 @@ export async function updateStoreSettings(projectId: string, input: unknown): Pr
         tiktok: data.tiktok ?? null,
         whatsapp: data.whatsapp ?? null,
         phone: data.phone ?? null,
+        facebookPixelId: data.facebookPixelId ?? null,
       },
     });
     await logActivity({ userId: user.id, action: "Update Store Settings", projectId });
