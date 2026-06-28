@@ -60,6 +60,7 @@ export function OrdersMobileList({ orders, role }: { orders: QuickOrder[]; role:
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-semibold">{o.orderNumber}</p>
+                <p className="truncate text-sm font-medium">{o.customerName}</p>
                 <p className="truncate text-xs text-muted-foreground">{o.projectName}</p>
               </div>
               <StatusBadge status={o.status} />
