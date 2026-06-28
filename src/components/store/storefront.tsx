@@ -606,10 +606,9 @@ function QuantitySelect({
       {removable ? <option value={0}>Remove</option> : null}
       {options.map((i) => {
         const unit = priceForQuantity(basePrice, tiers, i);
-        const isTier = tiers.some((t) => t.minQuantity === i);
         return (
           <option key={i} value={i}>
-            {i} — {formatAmount(unit)} {CURRENCY} each{isTier ? " 🎉" : ""}
+            {i} — {formatAmount(unit)} {CURRENCY} each
           </option>
         );
       })}
@@ -722,11 +721,6 @@ function ProductCard({
             <p className="font-medium">{p.name}</p>
             {p.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p> : null}
             <p className="mt-0.5 text-sm font-semibold">{formatAmount(p.basePrice)} {CURRENCY}</p>
-            {p.tiers.length > 0 ? (
-              <p className="mt-0.5 text-xs font-medium text-emerald-600">
-                🎉 {p.tiers.map((t) => `${t.minQuantity}+ → ${formatAmount(t.unitPrice)}`).join(" · ")} {CURRENCY} each
-              </p>
-            ) : null}
           </div>
           {showStock && totalStock !== null ? (
             <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
