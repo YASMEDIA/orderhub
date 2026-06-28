@@ -217,6 +217,7 @@ model Order {
   subtotal      Float         @default(0)
   grandTotal    Float         @default(0)
   status        OrderStatus   @default(PENDING)
+  deliveredAt   DateTime?     // set when status becomes DELIVERED; drives the driver's 12h grace window
   paymentMethod PaymentMethod @default(CASH)
 
   items     OrderItem[]

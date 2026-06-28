@@ -260,7 +260,15 @@ export async function updateOrderStatus(formData: FormData): Promise<OrderAction
     if (!existing) return { ok: false, message: "Order not found" };
     await assertProjectAccess(user, existing.projectId);
 
-    await prisma.order.update({ where: { id: parsed.data.id }, data: { status: parsed.data.status } });
+    // Stamp the delivery time when marking Delivered (and clear it otherwise) so
+    // the driver's list can keep delivered orders visible for 12h.
+    await prisma.order.update({
+      where: { id: parsed.data.id },
+      data: {
+        status: parsed.data.status,
+        deliveredAt: parsed.data.status === "DELIVERED" ? new Date() : null,
+      },
+    });
     await logActivity({
       userId: user.id,
       action: "Status Change",

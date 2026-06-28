@@ -32,13 +32,25 @@ export default async function OrdersPage({
   if (sp.project) where.projectId = sp.project;
   if (sp.status) where.status = sp.status as Prisma.OrderWhereInput["status"];
   if (sp.creator) where.createdById = sp.creator;
-  // Drivers only see active orders; delivered/cancelled disappear from their list.
+  // Drivers see active orders, plus delivered ones for 12h after delivery (so a
+  // just-completed drop-off doesn't vanish immediately). Cancelled stays hidden.
   if (user.role === "DRIVER") {
-    const terminal = ["DELIVERED", "CANCELLED"];
-    where.status =
-      sp.status && !terminal.includes(sp.status)
-        ? (sp.status as Prisma.OrderWhereInput["status"])
-        : { notIn: terminal as never };
+    delete where.status;
+    const deliveredSince = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const clauses: Prisma.OrderWhereInput[] = [
+      {
+        OR: [
+          { status: { notIn: ["DELIVERED", "CANCELLED"] as never } },
+          { status: "DELIVERED", deliveredAt: { gte: deliveredSince } },
+        ],
+      },
+    ];
+    // A driver's own status filter narrows further, but can never reveal
+    // cancelled or long-delivered orders.
+    if (sp.status && sp.status !== "CANCELLED") {
+      clauses.push({ status: sp.status as Prisma.OrderWhereInput["status"] });
+    }
+    where.AND = clauses;
   }
   if (sp.from || sp.to) {
     where.orderDate = {};
@@ -69,7 +81,7 @@ export default async function OrdersPage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-sm text-muted-foreground">
-            {total} {user.role === "DRIVER" ? "active " : ""}order{total === 1 ? "" : "s"} found.
+            {total} order{total === 1 ? "" : "s"} found.
           </p>
         </div>
         {user.role !== "DRIVER" ? (
