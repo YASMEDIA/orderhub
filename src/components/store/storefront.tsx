@@ -625,39 +625,39 @@ function QuantitySelect({
   const visible = Math.max(30, tierMax + 5);
   const listTop = Math.max(1, Math.min(max, Math.max(visible, value)));
   const canGoHigher = max > listTop; // true for unlimited (Infinity) stock too
-  const [custom, setCustom] = useState(value > listTop);
+  // Custom mode is opt-in only (picking "Custom…"). The text box starts empty so
+  // there's no stuck number — the customer just types the amount they want.
+  const [custom, setCustom] = useState(false);
+  const [customText, setCustomText] = useState("");
 
   const options: number[] = [];
   for (let i = 1; i <= listTop; i++) options.push(i);
 
   if (custom) {
-    const unit = priceForQuantity(basePrice, tiers, Math.max(1, value));
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <input
           type="number"
           min={1}
           max={Number.isFinite(max) ? max : undefined}
-          value={value || ""}
+          value={customText}
+          placeholder="Qty"
           aria-label="Custom quantity"
           autoFocus
           onChange={(e) => {
+            setCustomText(e.target.value);
             const n = Math.floor(Number(e.target.value));
-            if (!Number.isFinite(n) || n < 1) {
-              onChange(removable ? 0 : 1);
-              return;
-            }
+            if (!Number.isFinite(n) || n < 1) return;
             onChange(Number.isFinite(max) ? Math.min(n, max) : n);
           }}
           className="h-9 w-20 rounded-md border border-input bg-background px-2 text-sm font-medium"
         />
-        <span className="whitespace-nowrap text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</span>
         <button
           type="button"
-          onClick={() => { setCustom(false); onChange(Math.min(Math.max(1, value), listTop)); }}
-          className="text-xs text-primary hover:underline"
+          onClick={() => { setCustom(false); setCustomText(""); onChange(Math.min(Math.max(1, value), listTop)); }}
+          className="rounded-md border px-2 py-1 text-xs font-medium text-primary hover:bg-accent"
         >
-          list
+          ← List
         </button>
       </div>
     );
@@ -669,6 +669,7 @@ function QuantitySelect({
       onChange={(e) => {
         if (e.target.value === CUSTOM_QTY) {
           setCustom(true);
+          setCustomText("");
           return;
         }
         onChange(Number(e.target.value));
@@ -893,6 +894,7 @@ function ProductCard({
           {q > 0 ? <span className="text-xs text-muted-foreground">In cart: {q}</span> : null}
           {!stockUnavailable ? (
             <QuantitySelect
+              key={key}
               value={draftQty}
               max={remaining}
               basePrice={p.basePrice}
