@@ -3,16 +3,13 @@ import type { Prisma } from "@prisma/client";
 import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser, projectScopeWhere } from "@/lib/rbac";
-import { formatMoney, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { labelFor, ORDER_SOURCES, PAYMENT_METHODS, GOVERNORATES, HOUSING_TYPES } from "@/lib/constants";
 import { buildMapsLink } from "@/lib/location";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StatusBadge } from "@/components/dashboard/status-badge";
-import { OrderRowActions } from "@/components/orders/order-actions";
 import { OrderFilters } from "@/components/orders/order-filters";
 import { OrdersMobileList } from "@/components/orders/orders-mobile-list";
+import { OrdersTable } from "@/components/orders/orders-table";
 
 const PAGE_SIZE = 20;
 
@@ -141,49 +138,8 @@ export default async function OrdersPage({
       {/* Phone: simplified cards + View pop-up */}
       <OrdersMobileList orders={quickOrders} role={user.role} />
 
-      {/* Tablet/desktop: full table */}
-      <Card className="hidden md:block">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Summary</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">No orders match your filters.</TableCell></TableRow>
-              ) : (
-                orders.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/dashboard/orders/${o.id}`} className="hover:underline">{o.orderNumber}</Link>
-                    </TableCell>
-                    <TableCell>{o.customerName}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                      {o.items.length} item{o.items.length === 1 ? "" : "s"} · {o.items.map((i) => i.productName).join(", ")}
-                    </TableCell>
-                    <TableCell>{o.project.name}</TableCell>
-                    <TableCell>{formatMoney(o.grandTotal)}</TableCell>
-                    <TableCell><StatusBadge status={o.status} /></TableCell>
-                    <TableCell>{o.createdBy?.fullName ?? "Online Store"}</TableCell>
-                    <TableCell>{formatDate(o.createdAt)}</TableCell>
-                    <TableCell><OrderRowActions orderId={o.id} status={o.status} role={user.role} /></TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Tablet/desktop: full table with the same View pop-up */}
+      <OrdersTable orders={quickOrders} role={user.role} />
 
       {pages > 1 && (
         <div className="flex items-center justify-center gap-2">
