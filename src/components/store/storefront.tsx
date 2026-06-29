@@ -421,9 +421,9 @@ export function Storefront({
             <>
               {cart.map(({ key, p, variant, addons, q, unit, line }) => {
                 const img = variant?.images?.[0] ?? p.images?.[0];
+                // Cap by stock for variants; unlimited otherwise. QuantitySelect
+                // shows a sensible list and a Custom… input for larger amounts.
                 const cap = variant ? variantStock(variant) : Infinity;
-                const tierMax = p.tiers.length ? Math.max(...p.tiers.map((t) => t.minQuantity)) : 0;
-                const cartMaxN = cap === Infinity ? Math.max(30, tierMax + 5) : Math.min(cap, Math.max(30, tierMax + 5));
                 return (
                   <div key={key} className="flex items-center justify-between gap-3 rounded-lg border p-3">
                     <div className="flex min-w-0 items-center gap-3">
@@ -453,7 +453,7 @@ export function Storefront({
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
-                      <QuantitySelect value={q} max={cartMaxN} basePrice={p.basePrice} tiers={p.tiers} onChange={(n) => setQuantity(key, n)} removable />
+                      <QuantitySelect value={q} max={cap} basePrice={p.basePrice} tiers={p.tiers} onChange={(n) => setQuantity(key, n)} removable />
                       <Button type="button" variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(key, 0)} aria-label="Remove">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -595,11 +595,15 @@ export function Storefront({
   );
 }
 
+const CUSTOM_QTY = "custom";
+
 // One storefront product. For products with variants, selecting a colour swaps
 // the images, shows that colour's stock, and adds it to the cart as its own line.
 // Quantity picker as a price list instead of a +/- counter: each option shows
 // the unit price that applies at that quantity, so tier discounts are visible
-// and tempting. With `removable`, selecting 0 removes the cart line.
+// and tempting. The list is capped for usability; a "Custom…" option lets the
+// customer type any larger quantity (still bounded by stock when limited).
+// With `removable`, selecting 0 removes the cart line.
 function QuantitySelect({
   value,
   max,
@@ -615,13 +619,60 @@ function QuantitySelect({
   onChange: (q: number) => void;
   removable?: boolean;
 }) {
-  const top = Math.max(max, value, 1);
+  // Show every quantity up to the last tier (so all offers are visible), with a
+  // sensible minimum. Anything beyond is reachable via "Custom…".
+  const tierMax = tiers.length ? Math.max(...tiers.map((t) => t.minQuantity)) : 0;
+  const visible = Math.max(30, tierMax + 5);
+  const listTop = Math.max(1, Math.min(max, Math.max(visible, value)));
+  const canGoHigher = max > listTop; // true for unlimited (Infinity) stock too
+  const [custom, setCustom] = useState(value > listTop);
+
   const options: number[] = [];
-  for (let i = 1; i <= top; i++) options.push(i);
+  for (let i = 1; i <= listTop; i++) options.push(i);
+
+  if (custom) {
+    const unit = priceForQuantity(basePrice, tiers, Math.max(1, value));
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          min={1}
+          max={Number.isFinite(max) ? max : undefined}
+          value={value || ""}
+          aria-label="Custom quantity"
+          autoFocus
+          onChange={(e) => {
+            const n = Math.floor(Number(e.target.value));
+            if (!Number.isFinite(n) || n < 1) {
+              onChange(removable ? 0 : 1);
+              return;
+            }
+            onChange(Number.isFinite(max) ? Math.min(n, max) : n);
+          }}
+          className="h-9 w-20 rounded-md border border-input bg-background px-2 text-sm font-medium"
+        />
+        <span className="whitespace-nowrap text-xs text-muted-foreground">{formatAmount(unit)} {CURRENCY} each</span>
+        <button
+          type="button"
+          onClick={() => { setCustom(false); onChange(Math.min(Math.max(1, value), listTop)); }}
+          className="text-xs text-primary hover:underline"
+        >
+          list
+        </button>
+      </div>
+    );
+  }
+
   return (
     <select
       value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
+      onChange={(e) => {
+        if (e.target.value === CUSTOM_QTY) {
+          setCustom(true);
+          return;
+        }
+        onChange(Number(e.target.value));
+      }}
       aria-label="Quantity"
       className="h-9 max-w-[12rem] rounded-md border border-input bg-background px-2 text-sm font-medium"
     >
@@ -634,6 +685,7 @@ function QuantitySelect({
           </option>
         );
       })}
+      {canGoHigher ? <option value={CUSTOM_QTY}>Custom — enter amount…</option> : null}
     </select>
   );
 }
@@ -687,8 +739,6 @@ function ProductCard({
   const remaining = hasVariants ? Math.max(0, stock - inCartForVariant) : Infinity;
   const totalStock = hasVariants ? productStock(p) : null;
   const soldOut = hasVariants && stock <= 0;
-  const tierMax = p.tiers.length ? Math.max(...p.tiers.map((t) => t.minQuantity)) : 0;
-  const listCap = Math.max(30, tierMax + 5);
   const missingAddonText = selectedAddons.some((id) => {
     const addon = p.addons.find((a) => a.id === id);
     return Boolean(addon?.hasTextInput && !addonTexts[`${currentOptionKey}::${id}`]?.trim());
@@ -844,7 +894,7 @@ function ProductCard({
           {!stockUnavailable ? (
             <QuantitySelect
               value={draftQty}
-              max={Number.isFinite(remaining) ? Math.min(remaining as number, listCap) : listCap}
+              max={remaining}
               basePrice={p.basePrice}
               tiers={p.tiers}
               onChange={(n) => setDraftQty(Math.max(1, n))}
