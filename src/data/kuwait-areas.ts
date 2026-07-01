@@ -85,9 +85,9 @@ export const kuwaitAreas: Record<string, string[]> = {
   "Al Asimah": [
     "Abdullah Al-Salem",
     "Adailiya",
+    "Al-Dasma",
     "Bnaid Al-Qar",
     "Daiya",
-    "Dasman",
     "Doha",
     "Faiha",
     "Granada",
